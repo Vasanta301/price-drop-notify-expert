@@ -2428,28 +2428,32 @@ var NotificationForm = function NotificationForm() {
     setContent = _useState8[1];
   var _useState9 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(""),
     _useState10 = _slicedToArray(_useState9, 2),
-    startDate = _useState10[0],
-    setStartDate = _useState10[1];
+    trackingType = _useState10[0],
+    setTrackingType = _useState10[1];
   var _useState11 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(""),
     _useState12 = _slicedToArray(_useState11, 2),
-    endDate = _useState12[0],
-    setEndDate = _useState12[1];
-  var _useState13 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)("info"),
+    startDate = _useState12[0],
+    setStartDate = _useState12[1];
+  var _useState13 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(""),
     _useState14 = _slicedToArray(_useState13, 2),
-    notificationType = _useState14[0],
-    setNotificationType = _useState14[1]; // Default type
-  var _useState15 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(true),
+    endDate = _useState14[0],
+    setEndDate = _useState14[1];
+  var _useState15 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)("info"),
     _useState16 = _slicedToArray(_useState15, 2),
-    isEnabled = _useState16[0],
-    setIsEnabled = _useState16[1]; // Default enabled
-  var _useState17 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)([]),
+    notificationType = _useState16[0],
+    setNotificationType = _useState16[1]; // Default type
+  var _useState17 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(true),
     _useState18 = _slicedToArray(_useState17, 2),
-    selectedProducts = _useState18[0],
-    setSelectedProducts = _useState18[1];
+    isEnabled = _useState18[0],
+    setIsEnabled = _useState18[1]; // Default enabled
   var _useState19 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)([]),
     _useState20 = _slicedToArray(_useState19, 2),
-    selectedCategories = _useState20[0],
-    setSelectedCategories = _useState20[1];
+    selectedProducts = _useState20[0],
+    setSelectedProducts = _useState20[1];
+  var _useState21 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)([]),
+    _useState22 = _slicedToArray(_useState21, 2),
+    selectedCategories = _useState22[0],
+    setSelectedCategories = _useState22[1];
 
   //Set Base URL
   var base_url = "/wp-json/pricedropnotifexpert/v1";
@@ -2468,6 +2472,7 @@ var NotificationForm = function NotificationForm() {
           setIsEnabled(data[0].enabled !== undefined ? data[0].enabled : true);
           setSelectedProducts(data[0].selected_products || []);
           setSelectedCategories(data[0].selected_categories || []);
+          setTrackingType(data[0].tracking_type || "all");
         }
       })["catch"](function (err) {
         return console.error("Error fetching notification:", err);
@@ -2563,6 +2568,7 @@ var NotificationForm = function NotificationForm() {
               body: JSON.stringify({
                 title: title,
                 content: content,
+                tracking_type: trackingType,
                 start_date: startDate,
                 end_date: endDate,
                 type: notificationType,
@@ -2771,7 +2777,7 @@ var NotificationForm = function NotificationForm() {
     className: "col-25"
   }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("label", {
     "for": "fname"
-  }, "Content")), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+  }, "Notification Content")), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
     className: "col-75"
   }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("textarea", {
     value: content,
@@ -2821,7 +2827,7 @@ var NotificationForm = function NotificationForm() {
     closeMenuOnSelect: false
   }), selectedProducts.length > 0 && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
     className: "selected-products-list"
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("h4", null, "Selected Products:"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("ul", null, selectedProducts.map(function (product, index) {
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("ul", null, selectedProducts.map(function (product, index) {
     return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("li", {
       key: product.value
     }, " ", /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("span", null, product.label, " (ID: ", product.value, ")"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
@@ -2841,7 +2847,29 @@ var NotificationForm = function NotificationForm() {
     className: "col-25"
   }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("label", {
     "for": "fname"
-  }, "Date Range")), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+  }, "Tracking Type")), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    className: "col-75"
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("select", {
+    name: "tracking_type",
+    value: trackingType,
+    onChange: function onChange(e) {
+      return setTrackingType(e.target.value);
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("option", {
+    value: "all"
+  }, "All Changes (Starting Now)"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("option", {
+    value: "from-specific-date"
+  }, "From Specific Date"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("option", {
+    value: "at-specific-date"
+  }, "At Specific Date"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("option", {
+    value: "between-dates"
+  }, "Between Specific Dates")))), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    "class": "row"
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    className: "col-25"
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("label", {
+    "for": "start_date"
+  }, trackingType && trackingType == 'between-dates' ? 'Date Range' : 'Date')), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
     className: "col-75"
   }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("input", {
     type: "date",
@@ -2851,7 +2879,7 @@ var NotificationForm = function NotificationForm() {
       return setStartDate(e.target.value);
     },
     required: true
-  }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("input", {
+  }), trackingType && trackingType == 'between-dates' && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("input", {
     type: "date",
     name: "end_date",
     value: endDate,

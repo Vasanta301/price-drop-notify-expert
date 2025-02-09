@@ -122,6 +122,7 @@ class Price_Drop_Notify_Expert_Endpoints {
 				'id' => get_the_ID(),
 				'title' => get_the_title(),
 				'content' => get_the_content(),
+				'tracking_type' => get_post_meta(get_the_ID(), 'tracking_type'),
 				'start_date' => get_post_meta(get_the_ID(), 'start_date'),
 				'end_date' => get_post_meta(get_the_ID(), 'end_date'),
 				'type' => get_post_meta(get_the_ID(), 'type'),
@@ -170,6 +171,7 @@ class Price_Drop_Notify_Expert_Endpoints {
 		$post = get_post($post_id);
 		if ($post) {
 			// Update meta fields
+			update_post_meta($post_id, 'tracking_type', $data['tracking_type']);
 			update_post_meta($post_id, 'start_date', $data['start_date']);
 			update_post_meta($post_id, 'end_date', $data['end_date']);
 			update_post_meta($post_id, 'type', sanitize_text_field($data['type']));

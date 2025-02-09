@@ -8,6 +8,7 @@ const NotificationForm = () => {
     const [notifType, setNotifType] = useState(""); // "error" or "success"
     const [title, setTitle] = useState("");
     const [content, setContent] = useState("");
+    const [trackingType, setTrackingType] = useState("");
     const [startDate, setStartDate] = useState("");
     const [endDate, setEndDate] = useState("");
     const [notificationType, setNotificationType] = useState("info"); // Default type
@@ -32,6 +33,7 @@ const NotificationForm = () => {
                         setIsEnabled(data[0].enabled !== undefined ? data[0].enabled : true);
                         setSelectedProducts(data[0].selected_products || []);
                         setSelectedCategories(data[0].selected_categories || []);
+                        setTrackingType(data[0].tracking_type || "all");
                     }
                 })
                 .catch((err) => console.error("Error fetching notification:", err));
@@ -85,6 +87,7 @@ const NotificationForm = () => {
                 body: JSON.stringify({
                     title,
                     content,
+                    tracking_type: trackingType,
                     start_date: startDate,
                     end_date: endDate,
                     type: notificationType,
@@ -224,7 +227,7 @@ const NotificationForm = () => {
                     </div>
                     <div class="row">
                         <div className="col-25">
-                            <label for="fname">Content</label>
+                            <label for="fname">Notification Content</label>
                         </div>
                         <div className="col-75">
                             <textarea
@@ -271,7 +274,6 @@ const NotificationForm = () => {
                             />
                             {selectedProducts.length > 0 && (
                                 <div className="selected-products-list">
-                                    <h4>Selected Products:</h4>
                                     <ul>
                                         {selectedProducts.map((product, index) => (
                                             <li key={product.value}> {/* Or key={index} if product.value might be duplicated */}
@@ -297,7 +299,20 @@ const NotificationForm = () => {
                     <div className="section-title"><h2>How to Track</h2></div>
                     <div class="row">
                         <div className="col-25">
-                            <label for="fname">Date Range</label>
+                            <label for="fname">Tracking Type</label>
+                        </div>
+                        <div className="col-75">
+                            <select name="tracking_type" value={trackingType} onChange={(e) => setTrackingType(e.target.value)}>
+                                <option value="all">All Changes (Starting Now)</option>
+                                <option value="from-specific-date">From Specific Date</option>
+                                <option value="at-specific-date">At Specific Date</option>
+                                <option value="between-dates">Between Specific Dates</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div className="col-25">
+                            <label for="start_date">{trackingType && trackingType == 'between-dates' ? 'Date Range' : 'Date'}</label>
                         </div>
                         <div className="col-75">
                             <input
@@ -307,12 +322,14 @@ const NotificationForm = () => {
                                 onChange={(e) => setStartDate(e.target.value)}
                                 required
                             />
-                            <input
-                                type="date"
-                                name="end_date"
-                                value={endDate}
-                                onChange={(e) => setEndDate(e.target.value)}
-                            />
+                            {trackingType && trackingType == 'between-dates' &&
+                                <input
+                                    type="date"
+                                    name="end_date"
+                                    value={endDate}
+                                    onChange={(e) => setEndDate(e.target.value)}
+                                />
+                            }
                         </div>
 
 
