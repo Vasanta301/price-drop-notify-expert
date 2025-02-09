@@ -177,6 +177,10 @@ const NotificationForm = () => {
             return uniqueProducts;
         });
     };
+    const customComponents = {
+        MultiValueRemove: () => null, // Disables the delete (✖) icon
+    };
+
     return (
         <div className="container form-wrapper">
             <div className="header-section">
@@ -271,6 +275,8 @@ const NotificationForm = () => {
                                 onChange={(selectedOptions) => handleSelectChange(selectedOptions)}
                                 placeholder="Search and select products..."
                                 closeMenuOnSelect={false}
+                                value={selectedProducts}
+                                components={customComponents}
                             />
                             {selectedProducts.length > 0 && (
                                 <div className="selected-products-list">

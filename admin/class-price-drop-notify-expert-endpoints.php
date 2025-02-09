@@ -122,11 +122,11 @@ class Price_Drop_Notify_Expert_Endpoints {
 				'id' => get_the_ID(),
 				'title' => get_the_title(),
 				'content' => get_the_content(),
+				'enabled' => get_post_meta(get_the_ID(), 'enabled') ? get_post_meta(get_the_ID(), 'enabled') : 0,
 				'tracking_type' => get_post_meta(get_the_ID(), 'tracking_type'),
 				'start_date' => get_post_meta(get_the_ID(), 'start_date'),
 				'end_date' => get_post_meta(get_the_ID(), 'end_date'),
 				'type' => get_post_meta(get_the_ID(), 'type'),
-				'enabled' => get_post_meta(get_the_ID(), 'enabled'),
 				'selected_categories' => get_post_meta(get_the_ID(), 'selected_categories') ? get_post_meta(get_the_ID(), 'selected_categories')[0] : [],
 				'selected_products' => get_post_meta(get_the_ID(), 'selected_products') ? get_post_meta(get_the_ID(), 'selected_products')[0] : [],
 			];
