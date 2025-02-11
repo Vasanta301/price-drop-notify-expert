@@ -8,6 +8,80 @@
     padding-right: 1rem;
 }
 
+header {
+    display: flex;
+    padding-top: 0.5rem;
+    justify-content: space-between;
+}
+
+.header-wrapper {
+    display: flex;
+}
+
+.header-wrapper label {
+    display: inline-block;
+    color: var(--color-main);
+    margin-right: 2rem;
+    font-size: 1.8rem;
+}
+
+.header-wrapper label span:hover {
+    cursor: pointer;
+}
+
+.header-title h1 {
+    color: var(--main-text);
+    font-weight: 600;
+}
+
+.header-title p {
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.header-title p span {
+    color: red;
+    font-size: 1.2rem;
+    display: inline-block;
+    margin-left: 0.5rem;
+}
+
+.header-action button {
+    padding: 0.85rem 2rem;
+    font-size: 1rem;
+}
+
+.section-head {
+    font-size: 1.4rem;
+    color: var(--main);
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+/** Welcome **/
+#welcome {
+    display: flex;
+    justify-content: start;
+    align-items: left;
+    padding: 40px 20px;
+
+}
+
+#welcome {
+    background: #fff;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+#welcome .content {
+    max-width: 400px;
+}
+
+#welcome .image {
+    max-width: 100%;
+    height: auto;
+    margin-bottom: 20px;
+}
+
 @media (min-width: 640px) {
 
     /* sm breakpoint */
@@ -124,7 +198,8 @@
 .header-section {
     display: flex;
     justify-content: space-between;
-    background: #0056b3;
+    align-items: baseline !important;
+    background: linear-gradient(90deg, rgba(0, 212, 255, 1) 0%, rgba(9, 9, 121, 1) 35%);
     align-items: center;
     margin-top: 15px;
     padding: 10px;
@@ -143,7 +218,6 @@
 }
 
 .form-wrapper .form-container form .row {
-    padding-top: 10px;
     padding-bottom: 10px;
 }
 
@@ -186,19 +260,44 @@
 }
 
 .add-btn {
-    background: #fff;
-    color: #0056b3;
-    padding: 10px 15px;
+    color: #fff;
+    background: linear-gradient(90deg, rgba(0, 212, 255, 1) 30%, rgb(59, 59, 201) 100%);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    padding: 15px 20px;
     border: none;
     border-radius: 5px;
     cursor: pointer;
-    font-size: 14px;
+    font-size: 16px;
+    transition: background 0.3s ease-in-out;
 }
 
 .add-btn:hover {
-    border: 1px solid #fff;
-    background: #0056b3;
+    background: linear-gradient(90deg, rgb(59, 59, 201) 100%, rgba(0, 212, 255, 1) 30%);
     color: #fff;
+}
+
+.pdne-primary-btn {
+    border-radius: 5px;
+    cursor: pointer;
+    padding: 0.8em 1.2em 0.8em 1em;
+    transition: all ease-in-out 0.2s;
+    font-size: 16px;
+    display: flex;
+    gap: 5px;
+    justify-content: center;
+    align-items: center;
+    color: #fff;
+    font-weight: 600;
+}
+
+.save-add-btn,
+.btn-go-back {
+    background-color: #24b4fb;
+}
+
+.save-add-btn:hover,
+.btn-go-back:hover {
+    background-color: #0071e2;
 }
 
 .price-drop-list {
@@ -220,7 +319,7 @@
 }
 
 .price-drop-item:hover {
-    transform: scale(1.02);
+    transform: scale(1.01);
 }
 
 .left-section {
@@ -251,31 +350,34 @@
     cursor: pointer;
 }
 
-.edit-btn {
+.edit-btn:hover {
     background: #ffc107;
     color: black;
 }
 
-.delete-btn {
+.delete-btn:hover {
     background: #dc3545;
     color: white;
 }
 
-.preview-btn {
+.preview-btn:hover {
     background: #28a745;
     color: white;
 }
 
 .edit-btn:hover {
-    background: #e0a800;
+    background: #00e070;
+    color: white;
 }
 
 .delete-btn:hover {
     background: #c82333;
+    color: white;
 }
 
 .preview-btn:hover {
-    background: #218838;
+    background: #bdbdbd;
+    color: white;
 }
 
 label {
@@ -317,11 +419,13 @@ button {
 
 .error-success-notif-message {
     display: block;
-    margin-top: 10px;
-    padding: 8px;
+    margin-top: 15px;
+    padding: 15px;
     border-radius: 5px;
     font-size: 14px;
     text-align: center;
+    position: fixed;
+    width: 100%;
 }
 
 .success {

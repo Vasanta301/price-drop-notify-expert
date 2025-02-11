@@ -122,13 +122,17 @@ class Price_Drop_Notify_Expert_Endpoints {
 				'id' => get_the_ID(),
 				'title' => get_the_title(),
 				'content' => get_the_content(),
-				'enabled' => get_post_meta(get_the_ID(), 'enabled') ? get_post_meta(get_the_ID(), 'enabled') : 0,
+				'enabled' => get_post_meta(get_the_ID(), 'enabled') && get_post_meta(get_the_ID(), 'enabled') !== 0 ? 1 : 0,
 				'tracking_type' => get_post_meta(get_the_ID(), 'tracking_type'),
 				'start_date' => get_post_meta(get_the_ID(), 'start_date'),
 				'end_date' => get_post_meta(get_the_ID(), 'end_date'),
-				'type' => get_post_meta(get_the_ID(), 'type'),
+				'type' => get_post_meta(get_the_ID(), 'type') ? get_post_meta(get_the_ID(), 'type')[0] : '',
 				'selected_categories' => get_post_meta(get_the_ID(), 'selected_categories') ? get_post_meta(get_the_ID(), 'selected_categories')[0] : [],
 				'selected_products' => get_post_meta(get_the_ID(), 'selected_products') ? get_post_meta(get_the_ID(), 'selected_products')[0] : [],
+				'notification_nature' => get_post_meta(get_the_ID(), 'notification_nature'),
+				'track_products_by' => get_post_meta(get_the_ID(), 'track_products_by'),
+				'price_history_title' => get_post_meta(get_the_ID(), 'price_history_title'),
+				'enabled_info_graph' => get_post_meta(get_the_ID(), 'enabled_info_graph') && get_post_meta(get_the_ID(), 'enabled_info_graph') !== 0 ? 1 : 0,
 			];
 		}
 		//elog($posts);
@@ -171,15 +175,19 @@ class Price_Drop_Notify_Expert_Endpoints {
 		$post = get_post($post_id);
 		if ($post) {
 			// Update meta fields
-			update_post_meta($post_id, 'tracking_type', $data['tracking_type']);
-			update_post_meta($post_id, 'start_date', $data['start_date']);
-			update_post_meta($post_id, 'end_date', $data['end_date']);
+			update_post_meta($post_id, 'tracking_type', sanitize_text_field($data['tracking_type']));
+			update_post_meta($post_id, 'start_date', sanitize_text_field($data['start_date']));
+			update_post_meta($post_id, 'end_date', sanitize_text_field($data['end_date']));
 			update_post_meta($post_id, 'type', sanitize_text_field($data['type']));
-			update_post_meta($post_id, 'enabled', $data['enabled'] ? 1 : 0);
+			update_post_meta($post_id, 'enabled', sanitize_text_field($data['enabled']) ? 1 : 0);
 			update_post_meta($post_id, 'selected_categories', $data['selected_categories']);
 			update_post_meta($post_id, 'selected_products', $data['selected_products']);
+			update_post_meta($post_id, 'notification_nature', sanitize_text_field($data['notification_nature']));
+			update_post_meta($post_id, 'track_products_by', sanitize_text_field($data['track_products_by']));
+			update_post_meta($post_id, 'enabled_info_graph', sanitize_text_field($data['enabled_info_graph']) ? 1 : 0);
+			update_post_meta($post_id, 'price_history_title', sanitize_text_field($data['price_history_title']));
+
 		}
-		//elog($post);
 		$response['success'] = true;
 		$response['id'] = $post_id;
 

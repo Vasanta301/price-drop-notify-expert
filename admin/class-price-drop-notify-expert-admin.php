@@ -72,7 +72,7 @@ class Price_Drop_Notify_Expert_Admin {
 		 * between the defined hooks and the functions defined in this
 		 * class.
 		 */
-		if (isset($_GET['page']) && $_GET['page'] === 'pricedropnotifexpert') {
+		if (isset($_GET['page']) && in_array($_GET['page'], ['pricedropnotifexpert', 'pricedropnotifexpert-settings', 'pricedropnotifexpert-form'])) {
 			wp_enqueue_style($this->plugin_name, plugin_dir_url(__FILE__) . 'css/admin.css', array(), $this->version, 'all');
 		}
 	}
@@ -99,7 +99,7 @@ class Price_Drop_Notify_Expert_Admin {
 		wp_enqueue_script('wp-components'); // Optional: If you want to use WordPress components
 		wp_enqueue_script('wp-i18n'); // Optional: For internationalization
 
-		if (isset($_GET['page']) && $_GET['page'] === 'pricedropnotifexpert') {
+		if (isset($_GET['page']) && in_array($_GET['page'], ['pricedropnotifexpert'])) {
 			wp_enqueue_script('pcne-settings-page-menu-options',
 				plugin_dir_url(__FILE__) . '/build/index.js',
 				array('wp-element', 'wp-api-fetch'),
@@ -122,8 +122,8 @@ class Price_Drop_Notify_Expert_Admin {
 	 */
 	public function add_admin_menu() {
 		add_menu_page(
-			'Price Drop Notification Expert',
-			'Price Drop Notification Expert',
+			'Price Drop Notify Expert',
+			'Price Drop Notify Expert',
 			'manage_options',
 			'pricedropnotifexpert',
 			array($this, 'pcne_display_main_page_callback'),
@@ -132,7 +132,15 @@ class Price_Drop_Notify_Expert_Admin {
 		);
 		add_submenu_page(
 			'pricedropnotifexpert',
-			'Notification Settings',
+			'Form',
+			'Form',
+			'manage_options',
+			'pricedropnotifexpert-form',
+			array($this, 'pcne_form_page_callback')
+		);
+		add_submenu_page(
+			'pricedropnotifexpert',
+			'Contacts',
 			'Contacts',
 			'manage_options',
 			'pcne-contacts',
@@ -140,7 +148,7 @@ class Price_Drop_Notify_Expert_Admin {
 		);
 		add_submenu_page(
 			'pricedropnotifexpert',
-			'Contacts',
+			'Settings',
 			'Settings',
 			'manage_options',
 			'pricedropnotifexpert-settings',
@@ -167,21 +175,52 @@ class Price_Drop_Notify_Expert_Admin {
 	public function pcne_contacts_page_callback() {
 		?>
 		<div class="wrap">
-			<h1><?php echo esc_html(get_admin_page_title()); ?> | Contacts</h1>
 			<?php
 			$contacts_table = new PCNE_Contacts_Table();
 			$contacts_table->prepare_items();
 			?>
 			<div class="wrap">
-				<form method="post">
-					<?php $contacts_table->search_box('Search', 'search_id'); ?>
-					<?php $contacts_table->display(); ?>
-				</form>
+				<div class="form-wrapper">
+					<div class="form-container">
+						<div class="header-section">
+							<h2>Price Drop Notifiy Expert | <?php echo esc_html(get_admin_page_title()); ?></h2>
+						</div>
+						<form method="post">
+							<?php $contacts_table->search_box('Search', 'search_id'); ?>
+							<?php $contacts_table->display(); ?>
+						</form>
+					</div>
+				</div>
 			</div>
 		</div>
 		<?php
 	}
 
+	function pcne_form_page_callback() {
+		?>
+		<div class="wrap">
+
+			<div class="form-wrapper">
+				<div class="header-section">
+					<h2>Price Drop Notifiy Expert | <?php echo esc_html(get_admin_page_title()); ?></h2>
+				</div>
+				<div class="form-container">
+					<div style="padding:10px;background:#fff;">
+
+						<form method="post" action="options.php">
+							<?php
+							// Correct group name
+							settings_fields('pcne_form_settings_group');
+							do_settings_sections('pricedropnotifexpert-form');
+							submit_button();
+							?>
+						</form>
+					</div>
+				</div>
+			</div>
+		</div>
+		<?php
+	}
 	/**
 	 * Display the settings page for the plugin.
 	 *
@@ -190,18 +229,127 @@ class Price_Drop_Notify_Expert_Admin {
 	public function pcne_settings_page_callback() {
 		?>
 		<div class="wrap">
-			<h1><?php echo esc_html(get_admin_page_title()); ?> Setting</h1>
-			<form method="post" action="options.php">
-				<?php
-				settings_fields('pcne_settings_group');
-				do_settings_sections('pricedropnotifexpert-settings');
-				submit_button();
-				?>
-			</form>
+			<div class="form-wrapper">
+				<div class="header-section">
+					<h2>Price Drop Notifiy Expert | <?php echo esc_html(get_admin_page_title()); ?></h2>
+				</div>
+				<div class="form-container">
+					<div style="padding:10px;background:#fff;">
+						<form method="post" action="options.php">
+							<?php
+							settings_fields('pcne_settings_group');
+							do_settings_sections('pricedropnotifexpert-settings');
+							submit_button();
+							?>
+						</form>
+					</div>
+				</div>
+			</div>
 		</div>
 		<?php
 	}
+	public function register_form_settings() {
+		// Register settings group
+		register_setting('pcne_form_settings_group', 'price_drop_notification_expert');
 
+		// Add settings section
+		add_settings_section(
+			'pcne_form_section',
+			'Main Settings',
+			array($this, 'form_settings_section_callback'),
+			'pricedropnotifexpert-form'
+		);
+		// Add fields
+		add_settings_field(
+			'form_field_button_text',
+			'Button Text',
+			array($this, 'form_field_button_callback'),
+			'pricedropnotifexpert-form',
+			'pcne_form_section'
+		);
+		// Add fields
+		add_settings_field(
+			'pcne_form_field_1',
+			'Form Title',
+			array($this, 'form_field_callback'),
+			'pricedropnotifexpert-form',
+			'pcne_form_section'
+		);
+		add_settings_field(
+			'pcne_form_field_2',
+			'Form Description',
+			array($this, 'form_field_2_callback'),
+			'pricedropnotifexpert-form',
+			'pcne_form_section'
+		);
+		add_settings_field(
+			'pcne_form_field_3',
+			'Prefill Form Data',
+			array($this, 'form_field_3_callback'),
+			'pricedropnotifexpert-form',
+			'pcne_form_section'
+		);
+	}
+	/**
+	 * Section callback
+	 *
+	 * @since    1.0.0
+	 */
+	public function form_settings_section_callback() {
+		?>
+		<h2>
+			<p><?php _e('Configure the Form Below'); ?></p>
+		</h2>
+		<hr>
+		<?php
+	}
+
+	/**
+	 * AX Notification Field
+	 * @return void
+	 */
+	public function form_field_button_callback() {
+		$options = get_option('price_drop_notification_expert');
+		?>
+		<input id="form_field_button_text" type="text" name="price_drop_notification_expert[form][button_text]"
+			value="<?php echo isset($options['form']['button_text']) ? $options['form']['button_text'] : ''; ?>" />
+		<?php
+	}
+
+	/**
+	 * AX Notification Field
+	 * @return void
+	 */
+	public function form_field_callback() {
+		$options = get_option('price_drop_notification_expert');
+		?>
+		<input type="text" name="price_drop_notification_expert[form][title]"
+			value="<?php echo isset($options['form']['title']) ? $options['form']['title'] : ''; ?>" />
+		<?php
+	}
+
+
+	/**
+	 * AX Notification Field
+	 * @return void
+	 */
+	public function form_field_2_callback() {
+		$options = get_option('price_drop_notification_expert');
+		?>
+		<textarea type="text"
+			name="price_drop_notification_expert[form][description]"><?php echo isset($options['form']['description']) ? $options['form']['description'] : ''; ?></textarea>
+		<?php
+	}
+
+	/**
+	 * AX Notification Field
+	 * @return void
+	 */
+	public function form_field_3_callback() {
+		$options = get_option('price_drop_notification_expert');
+		$checked = isset($options['form']['prefill_form_data']) ? checked($options['form']['prefill_form_data'], 1, false) : '';
+		echo '<input type="checkbox" name="price_drop_notification_expert[form][prefill_form_data]" value="1" ' . $checked . ' />';
+	}
 	public function register_settings() {
 		// Register settings group
 		register_setting('pcne_settings_group', 'pricedropnotifexpert-settings');
@@ -254,10 +402,13 @@ class Price_Drop_Notify_Expert_Admin {
 	 */
 	public function settings_field_callback2() {
 		$options = get_option('price_drop_notification_expert');
-		echo "<input type='text' name='price_drop_notification_expert[fcm_server_key]' value='" . esc_attr($options['fcm_server_key']) . "' style='width: 400px;' />";
+		?>
+		<input type='text' name='price_drop_notification_expert[fcm_server_key]'
+			value="<?php echo isset($options['fcm_server_key']) ? esc_attr($options['fcm_server_key']) : ''; ?>" />
+		<?php
 	}
 
-	function track_price_changes($product_id) {
+	public function track_price_changes($product_id) {
 		$product = wc_get_product($product_id);
 		if (!$product)
 			return;
@@ -275,7 +426,7 @@ class Price_Drop_Notify_Expert_Admin {
 		}
 	}
 
-	function save_price_history($product_id, $variation_id, $new_price) {
+	public function save_price_history($product_id, $variation_id, $new_price) {
 		global $wpdb;
 		$table_name = $wpdb->prefix . 'price_drop_notify_price_history';
 
@@ -293,18 +444,19 @@ class Price_Drop_Notify_Expert_Admin {
 		// Check last recorded price
 		$last_entry = !empty($price_history) ? end($price_history) : null;
 		$last_price = $last_entry ? $last_entry['price'] : null;
-
-		// Log for debugging
-		elog('last_entry : ' . json_encode($last_entry));
-		elog('last_price : ' . $last_price);
-		elog('new_price : ' . $new_price);
-
+		$latest_price_history = [];
 		// Only update if price has changed OR if it's a new product
 		if ($last_price !== $new_price || empty($existing_history)) {
-			$price_history[] = [
+
+			$latest_price_history = [
 				'price' => $new_price,
 				'date' => current_time('mysql'),
 			];
+			// Add new price entry to the history
+			$price_history[] = $latest_price_history;
+
+			// Encode the updated price history
+			$updated_price_history = json_encode($price_history);
 
 			if (empty($existing_history)) {
 				// Insert a new record if the product is new
@@ -313,7 +465,7 @@ class Price_Drop_Notify_Expert_Admin {
 					[
 						'product_id' => $product_id,
 						'variation_id' => $variation_id,
-						'price_history' => json_encode($price_history),
+						'price_history' => $updated_price_history,
 						'change_date' => current_time('mysql'),
 					],
 					['%d', '%d', '%s', '%s']
@@ -323,7 +475,7 @@ class Price_Drop_Notify_Expert_Admin {
 				$wpdb->update(
 					$table_name,
 					[
-						'price_history' => json_encode($price_history),
+						'price_history' => $updated_price_history,
 						'change_date' => current_time('mysql'),
 					],
 					[
@@ -338,4 +490,89 @@ class Price_Drop_Notify_Expert_Admin {
 	}
 
 
+
+	// Helper: Send notification (placeholder function)
+
+	private function process_notification($notification_id, $price_history) {
+		$notification_type = get_post_meta($notification_id, 'type', true);
+
+		if ($notification_type === 'info') {
+			$product_id = $price_history['product_id'];
+			$old_price = $price_history['price_history']['price'];
+			$product = wc_get_product($product_id);
+			$new_price = $product->get_price();
+			$savings = $old_price - $new_price;
+
+			if ($savings > 0) {
+				// Save the message to display later
+				$message = sprintf(
+					'<div class="price-drop-alert">Price dropped! You save: %s</div>',
+					wc_price($savings)
+				);
+
+				// Store in product meta
+				update_post_meta($product_id, '_price_drop_message', $message);
+			}
+		}
+	}
+	private function send_notification($notification_id, $price_history) {
+		$notification_type = get_post_meta($notification_id, 'type', true);
+		switch ($notification_type) {
+			case 'info':
+				$product_id = $price_history['product_id'];
+				$variation_id = $price_history['variation_id'];
+				$price_history = $price_history['price_history'];
+				$product = wc_get_product($product_id);
+				$old_price = $price_history['price'];
+				$new_price = $product->get_price();
+				$savings = $old_price - $new_price;
+				ob_Start();
+				if ($savings > 0) {
+					?>
+					<p>You Save: <?php echo $savings; ?></p>
+					<?php
+					$content = ob_get_clean();
+					// add_action('woocommerce_single_product_summary', function ($content) {
+					// 	echo $content;
+					// });
+
+					// error_log($content);
+				}
+				break;
+			case 'email':
+				$product_id = $price_history['product_id'];
+				$variation_id = $price_history['variation_id'];
+				$price_history = $price_history['price_history'];
+				$product = wc_get_product($product_id);
+				$old_price = $price_history['price'];
+				$new_price = $product->get_price();
+				$savings = $old_price - $new_price;
+				ob_Start();
+				if ($savings > 0) {
+					?>
+					<p>You Save: <?php echo $savings; ?></p>
+					<?php
+					$content = ob_get_clean();
+					wp_mail('basanta.subedi@webandapp.com.np', 'Test mail', $content);
+
+					// error_log($content);
+				}
+				break;
+			case 'push-notifications':
+				# code...
+				break;
+			case 'message':
+				# code...
+				break;
+			default:
+				# code...
+				break;
+		}
+		// Implement your notification logic here
+
+	}
+
+	function sssssssssssssss() {
+
+	}
 }

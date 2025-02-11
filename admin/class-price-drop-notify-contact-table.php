@@ -93,6 +93,17 @@ class PCNE_Contacts_Table extends WP_List_Table {
 				// Fetch the product name using the product ID
 				$product_id = $item['product_id'];
 				return $product_id ? get_the_title($product_id) : __('No Product', 'textdomain');
+			case 'variable_data':
+				// Fetch the product name using the product ID
+				$item_Data = !empty($item['variable_data']) ? json_decode($item['variable_data']) : '';
+				if (is_object($item_Data)) {
+					$attributes = [];
+					foreach ($item_Data as $key => $value) {
+						$attributes[] = str_replace('pa_', '', $key) . ': ' . $value->label;
+					}
+					return implode(' | ', $attributes);
+				}
+
 			default:
 				return isset($item[$column_name]) ? $item[$column_name] : '';
 		}
@@ -105,6 +116,7 @@ class PCNE_Contacts_Table extends WP_List_Table {
 			'name' => __('Name', 'textdomain'),
 			'email' => __('Email', 'textdomain'),
 			'phone' => __('Phone', 'textdomain'),
+			'variable_data' => __('Attributes', 'textdomain'),
 			'product_id' => __('Product', 'textdomain'),
 		];
 	}

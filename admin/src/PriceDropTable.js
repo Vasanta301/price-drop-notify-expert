@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-
+import { Dashicon } from '@wordpress/components';
 const PriceDropTable = () => {
     const [posts, setPosts] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -54,25 +54,41 @@ const PriceDropTable = () => {
 
     return (
         <div className="container">
-            <div className="header-section">
-                <h2>Price Drop Notifications</h2>
-                <button className="add-btn" onClick={() => navigate("/add")}>+ Add New</button>
-            </div>
-            <div className="price-drop-list">
-                {posts.map((post) => (
-
-                    <div key={post.id} className="price-drop-item">
-                        <div className="left-section">
-                            <div className="price-drop-title">{post.title}</div>
-                        </div>
-                        <div className="action-buttons">
-                            <button className="edit-btn" onClick={() => navigate(`/edit/${post.id}`)}>Edit</button>
-                            <button className="delete-btn" onClick={() => handleDelete(post.id)}>Delete</button>
-                            <button className="preview-btn" onClick={() => window.open(post.link, "_blank")}>Preview</button>
-                        </div>
+            <header>
+                <div class="header-wrapper">
+                    <div class="header-title">
+                        <h1>Price Drop Notifications</h1>
+                        <p>Welcome to Price Drop Notification landing page.</p>
                     </div>
-                ))}
-            </div>
+                </div>
+                <div class="header-action">
+                    <button className="add-btn btn btn-main" onClick={() => navigate("/add")}>+ Add New</button>
+                </div>
+            </header>
+
+            <sections id="welcome">
+                <div className="content">
+                    <h1>Hi there !</h1>
+                    <p>You can configure your notify template from here</p>
+                </div>
+            </sections>
+            <sections>
+                <h3 class="section-head">Overview</h3>
+                <div className="price-drop-list">
+                    {posts.map((post) => (
+                        <div key={post.id} className="price-drop-item">
+                            <div className="left-section">
+                                <div className="price-drop-title">{post.title}</div>
+                            </div>
+                            <div className="action-buttons">
+                                <button className="edit-btn" onClick={() => navigate(`/edit/${post.id}`)}><Dashicon icon="edit" /></button>
+                                <button className="delete-btn" onClick={() => handleDelete(post.id)}><Dashicon icon="trash" /></button>
+                                <button className="preview-btn" onClick={() => window.open(post.link, "_blank")}><Dashicon icon="format-aside" /></button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </sections>
         </div>
     );
 };
