@@ -207,17 +207,28 @@ header {
 }
 
 .form-wrapper .form-container {
-    padding: 20px;
-    background: #fff;
     font-family: Arial, sans-serif;
-    height: 100vh;
 }
 
-.form-wrapper .form-container form {
+.form-wrapper .form-container section {
     max-width: 600px;
+    background: #fff;
+    margin-top: 20px;
+    margin-bottom: 20px;
+    padding: 20px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.form-wrapper .form-container section h2 {
+    font-size: 20px;
+}
+
+.form-wrapper .form-container section input[type=submit] {
+    max-width: max-content;
 }
 
 .form-wrapper .form-container form .row {
+
     padding-bottom: 10px;
 }
 
@@ -318,13 +329,20 @@ header {
     transition: transform 0.2s ease-in-out;
 }
 
-.price-drop-item:hover {
-    transform: scale(1.01);
-}
-
 .left-section {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
+    gap: 15px;
+    align-items: center;
+}
+
+.left-section .visibility-btn {
+    cursor: pointer;
+}
+
+.left-section .visibility-btn:hover {
+    transform: scale(1.05);
+    color: #666;
 }
 
 .price-drop-title {
@@ -419,13 +437,17 @@ button {
 
 .error-success-notif-message {
     display: block;
-    margin-top: 15px;
-    padding: 15px;
+    margin-top: 25px;
+    padding: 25px;
     border-radius: 5px;
-    font-size: 14px;
+    font-size: 16px;
     text-align: center;
     position: fixed;
-    width: 100%;
+    z-index: 999;
+    top: 50px;
+    right: 0;
+    max-width: 300px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .success {
@@ -466,3 +488,39 @@ button {
 .remove-product-btn:hover {
     color: darkred;
 }
+
+/** Form Builder css starts */
+.field-item {
+    border: 1px solid #ccc;
+    margin-bottom: 15px;
+    background: #f9f9f9;
+    padding: 10px;
+}
+
+.field-header {
+    font-weight: bold;
+    cursor: move;
+    padding: 5px;
+    background: #e9e9e9;
+    display: flex !important;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.accordion-container {
+    margin-top: 10px;
+}
+
+/* Highlight placeholder style during dragging */
+.ui-state-highlight {
+    height: 2.5em;
+    background: #fafafa;
+    border: 1px dashed #ccc;
+    margin-bottom: 15px;
+}
+
+.accordion-container .ui-accordion-header-icon {
+    display: none;
+}
+
+/** Form Builder CSs ends **/

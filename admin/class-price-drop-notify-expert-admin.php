@@ -95,11 +95,25 @@ class Price_Drop_Notify_Expert_Admin {
 		 * between the defined hooks and the functions defined in this
 		 * class.
 		 */
+
+		//Jquery
+		wp_enqueue_script('jquery');
+		wp_enqueue_script('jquery-ui-core');
+		wp_enqueue_script('jquery-ui-sortable');
+		wp_enqueue_script('jquery-ui-accordion');
+
+		//React and Dom
 		wp_enqueue_script('wp-element'); // Includes React and ReactDOM
 		wp_enqueue_script('wp-components'); // Optional: If you want to use WordPress components
 		wp_enqueue_script('wp-i18n'); // Optional: For internationalization
+		wp_enqueue_script('pcne-admin',
+			plugin_dir_url(__FILE__) . 'js/admin.js',
+			array('jquery'),
+			'1.00',
+			true);
 
 		if (isset($_GET['page']) && in_array($_GET['page'], ['pricedropnotifexpert'])) {
+
 			wp_enqueue_script('pcne-settings-page-menu-options',
 				plugin_dir_url(__FILE__) . '/build/index.js',
 				array('wp-element', 'wp-api-fetch'),
@@ -197,23 +211,114 @@ class Price_Drop_Notify_Expert_Admin {
 	}
 
 	function pcne_form_page_callback() {
+		$formfields = array(
+			array(
+				'field_key' => 'name',
+				'label' => 'Name',
+				'required' => true,
+				'show_label' => true,
+				'order' => 1,
+			),
+			array(
+				'field_key' => 'phone',
+				'label' => 'Phone',
+				'required' => true,
+				'show_label' => true,
+				'order' => 2,
+			),
+			array(
+				'field_key' => 'email',
+				'label' => 'Email',
+				'required' => true,
+				'show_label' => true,
+				'order' => 3,
+			),
+			array(
+				'field_key' => 'additional_info',
+				'label' => 'Show Additional Info for Variable Product',
+				'required' => false,  // Set to true since it's listed as a required field.
+				'show_label' => true,
+				'order' => 4,
+			),
+		);
 		?>
 		<div class="wrap">
-
 			<div class="form-wrapper">
 				<div class="header-section">
 					<h2>Price Drop Notifiy Expert | <?php echo esc_html(get_admin_page_title()); ?></h2>
 				</div>
 				<div class="form-container">
-					<div style="padding:10px;background:#fff;">
+					<div style="padding:10px;">
 
 						<form method="post" action="options.php">
-							<?php
-							// Correct group name
-							settings_fields('pcne_form_settings_group');
-							do_settings_sections('pricedropnotifexpert-form');
-							submit_button();
-							?>
+							<section>
+								<?php
+								// Correct group name
+								settings_fields('pcne_form_settings_group');
+								do_settings_sections('pricedropnotifexpert-form');
+								?>
+							</section>
+
+							<section>
+								<h2>Field Configuration</h2>
+								<h4>
+									<?php _e('Form Configuration'); ?>
+								</h4>
+								<hr>
+								<div id="sortable-fields">
+									<?php
+									$options = get_option('price_drop_notification_expert');
+									if (isset($options['form']['fields'])) {
+										$formfields = $options['form']['fields'];
+									}
+									foreach ($formfields as $field): ?>
+										<div class="field-item" data-key="<?php echo htmlspecialchars($field['field_key']); ?>">
+
+											<div class="accordion-container">
+												<div class="field-header">
+													<h3><?php echo htmlspecialchars($field['label']); ?></h3>
+													<span style="cursor:pointer;">
+														<span class="dashicons dashicons-insert"></span>
+													</span>
+												</div>
+												<div class="accordion-content">
+													<label>Field Key:</label>
+													<input type="text"
+														name="price_drop_notification_expert[form][fields][<?php echo htmlspecialchars($field['field_key']); ?>][field_key]"
+														value="<?php echo isset($options['form']['fields'][$field['field_key']]['field_key']) ? $options['form']['fields'][$field['field_key']]['field_key'] : htmlspecialchars($field['field_key']); ?>"
+														readonly />
+
+													<label>Label:</label>
+													<input type="text"
+														name="price_drop_notification_expert[form][fields][<?php echo htmlspecialchars($field['field_key']); ?>][label]"
+														value="<?php echo htmlspecialchars($field['label']); ?>" />
+
+													<label>Required:</label>
+													<input type="checkbox"
+														name="price_drop_notification_expert[form][fields][<?php echo htmlspecialchars($field['field_key']); ?>][required]"
+														value="1" <?php echo isset($field['required']) ? 'checked' : ''; ?> />
+
+													<label>Show Label:</label>
+													<input type="checkbox"
+														name="price_drop_notification_expert[form][fields][<?php echo htmlspecialchars($field['field_key']); ?>][show_label]"
+														value="1" <?php echo isset($field['show_label']) ? 'checked' : ''; ?> />
+
+
+													<input type="hidden"
+														name="price_drop_notification_expert[form][fields][<?php echo htmlspecialchars($field['field_key']); ?>][order]"
+														class="field-order"
+														value="<?php echo htmlspecialchars($field['order']); ?>" />
+												</div> <!-- Close .accordion-content -->
+											</div> <!-- Close .accordion-container -->
+										</div> <!-- Close .field-item -->
+									<?php endforeach; ?>
+								</div>
+							</section>
+							<section>
+								<?php
+								submit_button();
+								?>
+							</section>
 						</form>
 					</div>
 				</div>
@@ -234,13 +339,19 @@ class Price_Drop_Notify_Expert_Admin {
 					<h2>Price Drop Notifiy Expert | <?php echo esc_html(get_admin_page_title()); ?></h2>
 				</div>
 				<div class="form-container">
-					<div style="padding:10px;background:#fff;">
+					<div style="padding:10px;">
 						<form method="post" action="options.php">
-							<?php
-							settings_fields('pcne_settings_group');
-							do_settings_sections('pricedropnotifexpert-settings');
-							submit_button();
-							?>
+							<section>
+								<?php
+								settings_fields('pcne_settings_group');
+								do_settings_sections('pricedropnotifexpert-settings');
+								?>
+							</section>
+							<section>
+								<?php
+								submit_button();
+								?>
+							</section>
 						</form>
 					</div>
 				</div>
@@ -297,9 +408,9 @@ class Price_Drop_Notify_Expert_Admin {
 	 */
 	public function form_settings_section_callback() {
 		?>
-		<h2>
-			<p><?php _e('Configure the Form Below'); ?></p>
-		</h2>
+		<h4>
+			<?php _e('Form Basic Settings'); ?>
+		</h4>
 		<hr>
 		<?php
 	}
@@ -311,8 +422,8 @@ class Price_Drop_Notify_Expert_Admin {
 	public function form_field_button_callback() {
 		$options = get_option('price_drop_notification_expert');
 		?>
-		<input id="form_field_button_text" type="text" name="price_drop_notification_expert[form][button_text]"
-			value="<?php echo isset($options['form']['button_text']) ? $options['form']['button_text'] : ''; ?>" />
+		<input id="form_field_button_text" type="text" name="price_drop_notification_expert[form][setting][button_text]"
+			value="<?php echo isset($options['form']['setting']['button_text']) ? $options['form']['setting']['button_text'] : ''; ?>" />
 		<?php
 	}
 
@@ -323,8 +434,8 @@ class Price_Drop_Notify_Expert_Admin {
 	public function form_field_callback() {
 		$options = get_option('price_drop_notification_expert');
 		?>
-		<input type="text" name="price_drop_notification_expert[form][title]"
-			value="<?php echo isset($options['form']['title']) ? $options['form']['title'] : ''; ?>" />
+		<input type="text" name="price_drop_notification_expert[form][setting][title]"
+			value="<?php echo isset($options['form']['setting']['title']) ? $options['form']['setting']['title'] : ''; ?>" />
 		<?php
 	}
 
@@ -337,7 +448,7 @@ class Price_Drop_Notify_Expert_Admin {
 		$options = get_option('price_drop_notification_expert');
 		?>
 		<textarea type="text"
-			name="price_drop_notification_expert[form][description]"><?php echo isset($options['form']['description']) ? $options['form']['description'] : ''; ?></textarea>
+			name="price_drop_notification_expert[form][setting][description]"><?php echo isset($options['form']['setting']['description']) ? $options['form']['setting']['description'] : ''; ?></textarea>
 		<?php
 	}
 
@@ -347,8 +458,8 @@ class Price_Drop_Notify_Expert_Admin {
 	 */
 	public function form_field_3_callback() {
 		$options = get_option('price_drop_notification_expert');
-		$checked = isset($options['form']['prefill_form_data']) ? checked($options['form']['prefill_form_data'], 1, false) : '';
-		echo '<input type="checkbox" name="price_drop_notification_expert[form][prefill_form_data]" value="1" ' . $checked . ' />';
+		$checked = isset($options['form']['setting']['prefill_form_data']) ? checked($options['form']['setting']['prefill_form_data'], 1, false) : '';
+		echo '<input type="checkbox" name="price_drop_notification_expert[form][setting][prefill_form_data]" value="1" ' . $checked . ' />';
 	}
 	public function register_settings() {
 		// Register settings group
@@ -445,10 +556,18 @@ class Price_Drop_Notify_Expert_Admin {
 		$last_entry = !empty($price_history) ? end($price_history) : null;
 		$last_price = $last_entry ? $last_entry['price'] : null;
 		$latest_price_history = [];
-		// Only update if price has changed OR if it's a new product
-		if ($last_price !== $new_price || empty($existing_history)) {
+		// Check if product_id is the same but variation_id is different
+		if ($last_entry && $last_entry['product_id'] === $product_id && $last_entry['variation_id'] !== $variation_id) {
+			$latest_price_history[] = [
+				'product_id' => $product_id,
+				'variation_id' => $variation_id,
+				'price' => $new_price,
+				'date' => current_time('mysql'),
+			];
+		} else if ($last_price !== $new_price || empty($existing_history)) {
 
 			$latest_price_history = [
+				'last_price' => $last_price,
 				'price' => $new_price,
 				'date' => current_time('mysql'),
 			];

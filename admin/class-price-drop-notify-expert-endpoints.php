@@ -85,7 +85,11 @@ class Price_Drop_Notify_Expert_Endpoints {
 			'callback' => [$this, 'create_update_pricedropnotifexpert'],
 			'permission_callback' => '__return_true',
 		]);
-
+		register_rest_route('pricedropnotifexpert/v1', '/notification/toggle-visibility/(?P<id>\d+)', [
+			'methods' => 'PUT',
+			'callback' => [$this, 'toggle_visibility_pricedropnotifexpert'],
+			'permission_callback' => '__return_true',
+		]);
 		// Endpoint for deleting a post
 		register_rest_route('pricedropnotifexpert/v1', '/notification/(?P<id>\d+)', [
 			'methods' => 'DELETE',
@@ -120,19 +124,20 @@ class Price_Drop_Notify_Expert_Endpoints {
 
 			$posts[] = [
 				'id' => get_the_ID(),
+				'enabled' => get_post_meta(get_the_ID(), 'enabled') && get_post_meta(get_the_ID(), 'enabled', true) == 'true' ? 'true' : 'false',
 				'title' => get_the_title(),
 				'content' => get_the_content(),
-				'enabled' => get_post_meta(get_the_ID(), 'enabled') && get_post_meta(get_the_ID(), 'enabled') !== 0 ? 1 : 0,
-				'tracking_type' => get_post_meta(get_the_ID(), 'tracking_type'),
-				'start_date' => get_post_meta(get_the_ID(), 'start_date'),
-				'end_date' => get_post_meta(get_the_ID(), 'end_date'),
-				'type' => get_post_meta(get_the_ID(), 'type') ? get_post_meta(get_the_ID(), 'type')[0] : '',
+				'tracking_type' => get_post_meta(get_the_ID(), 'tracking_type') ? get_post_meta(get_the_ID(), 'tracking_type')[0] : '',
+				'start_date' => get_post_meta(get_the_ID(), 'start_date') ? get_post_meta(get_the_ID(), 'start_date')[0] : '',
+				'end_date' => get_post_meta(get_the_ID(), 'end_date') ? get_post_meta(get_the_ID(), 'end_date')[0] : '',
+				'notification_type' => get_post_meta(get_the_ID(), 'notification_type') ? get_post_meta(get_the_ID(), 'notification_type')[0] : '',
 				'selected_categories' => get_post_meta(get_the_ID(), 'selected_categories') ? get_post_meta(get_the_ID(), 'selected_categories')[0] : [],
 				'selected_products' => get_post_meta(get_the_ID(), 'selected_products') ? get_post_meta(get_the_ID(), 'selected_products')[0] : [],
-				'notification_nature' => get_post_meta(get_the_ID(), 'notification_nature'),
-				'track_products_by' => get_post_meta(get_the_ID(), 'track_products_by'),
-				'price_history_title' => get_post_meta(get_the_ID(), 'price_history_title'),
-				'enabled_info_graph' => get_post_meta(get_the_ID(), 'enabled_info_graph') && get_post_meta(get_the_ID(), 'enabled_info_graph') !== 0 ? 1 : 0,
+				'notification_nature' => get_post_meta(get_the_ID(), 'notification_nature') ? get_post_meta(get_the_ID(), 'notification_nature')[0] : '',
+				'track_products_by' => get_post_meta(get_the_ID(), 'track_products_by') ? get_post_meta(get_the_ID(), 'track_products_by')[0] : '',
+				'price_history_title' => get_post_meta(get_the_ID(), 'price_history_title') ? get_post_meta(get_the_ID(), 'price_history_title')[0] : '',
+				'enabled_info_graph' => get_post_meta(get_the_ID(), 'enabled_info_graph') && get_post_meta(get_the_ID(), 'enabled_info_graph', true) == 'true' ? 'true' : 'false',
+				'email_header' => get_post_meta(get_the_ID(), 'email_header') ? get_post_meta(get_the_ID(), 'email_header')[0] : '',
 			];
 		}
 		//elog($posts);
@@ -160,11 +165,11 @@ class Price_Drop_Notify_Expert_Endpoints {
 		// Ensure the post exists
 
 		$response = [];
-
+		error_log(print_r($data['enabled'], true));
 		if (!$post_id) {
 			// Insert a new post
 			$post_id = wp_insert_post($post_data);
-			$response['message'] = 'New Notification Created. Start Editing.';
+			$response['message'] = 'congratulation! New Notification Created. Start Editing.';
 		} else {
 			$post_data['ID'] = $post_id;
 			// Update existing post
@@ -175,18 +180,19 @@ class Price_Drop_Notify_Expert_Endpoints {
 		$post = get_post($post_id);
 		if ($post) {
 			// Update meta fields
+			update_post_meta($post_id, 'enabled', sanitize_text_field($data['enabled']) && $data['enabled'] == 'true' ? 'true' : 'false');
+
 			update_post_meta($post_id, 'tracking_type', sanitize_text_field($data['tracking_type']));
 			update_post_meta($post_id, 'start_date', sanitize_text_field($data['start_date']));
 			update_post_meta($post_id, 'end_date', sanitize_text_field($data['end_date']));
-			update_post_meta($post_id, 'type', sanitize_text_field($data['type']));
-			update_post_meta($post_id, 'enabled', sanitize_text_field($data['enabled']) ? 1 : 0);
+			update_post_meta($post_id, 'notification_type', sanitize_text_field($data['notification_type']));
 			update_post_meta($post_id, 'selected_categories', $data['selected_categories']);
 			update_post_meta($post_id, 'selected_products', $data['selected_products']);
 			update_post_meta($post_id, 'notification_nature', sanitize_text_field($data['notification_nature']));
 			update_post_meta($post_id, 'track_products_by', sanitize_text_field($data['track_products_by']));
-			update_post_meta($post_id, 'enabled_info_graph', sanitize_text_field($data['enabled_info_graph']) ? 1 : 0);
+			update_post_meta($post_id, 'enabled_info_graph', sanitize_text_field($data['enabled_info_graph']) && $data['enabled_info_graph'] == 'true' ? 'true' : 'false');
 			update_post_meta($post_id, 'price_history_title', sanitize_text_field($data['price_history_title']));
-
+			update_post_meta($post_id, 'email_header', sanitize_text_field($data['email_header']));
 		}
 		$response['success'] = true;
 		$response['id'] = $post_id;
@@ -194,6 +200,29 @@ class Price_Drop_Notify_Expert_Endpoints {
 		return new WP_REST_Response($response, 200);
 	}
 
+	/**
+	 * Callback to create a new post
+	 * @param mixed $data
+	 * @return WP_Error|WP_REST_Response
+	 */
+	public function toggle_visibility_pricedropnotifexpert($data) {
+		$post_id = isset($data['id']) ? intval($data['id']) : 'false';
+
+		$response = [];
+		$response['message'] = 'Visbility Changed';
+
+		$post = get_post($post_id);
+		if ($post) {
+			$current_status = get_post_meta($post_id, 'enabled', true);
+			$new_status = $current_status == 'true' ? 'false' : 'true';
+			update_post_meta($post_id, 'enabled', $new_status);
+			$response['new_status'] = $new_status;
+		}
+		$response['success'] = true;
+		$response['id'] = $post_id;
+
+		return new WP_REST_Response($response, 200);
+	}
 	/**
 	 * Callback to delete a Notification and it's data
 	 * @param mixed $data

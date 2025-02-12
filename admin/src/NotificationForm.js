@@ -22,13 +22,14 @@ const NotificationForm = () => {
     const [startDate, setStartDate] = useState("");
     const [endDate, setEndDate] = useState("");
     const [notificationType, setNotificationType] = useState("info-graph"); // Default type
-    const [isEnabled, setIsEnabled] = useState(0); // Default enabled
+    const [isEnabled, setIsEnabled] = useState('false'); // Default enabled
     const [selectedProducts, setSelectedProducts] = useState([]);
     const [selectedCategories, setSelectedCategories] = useState([]);
     const [notificationNature, setNotificationNature] = useState("individual");
     const [trackProductsBy, setTrackProductsBy] = useState("all");
     const [priceHistoryTitle, setPriceHistoryTitle] = useState("");
-    const [isEnabledInfoGraph, SetisEnabledInfoGraph] = useState(0);
+    const [isEnabledInfoGraph, setIsEnabledInfoGraph] = useState('false');
+    const [emaillHeader, setEmaillHeader] = useState("");
     //Set Base URL
     const base_url = `/wp-json/pricedropnotifexpert/v1`;
     useEffect(() => {
@@ -38,23 +39,24 @@ const NotificationForm = () => {
                 .then((res) => res.json())
                 .then((data) => {
                     if (Array.isArray(data) && data.length > 0) {
+                        console.log(data[0].enabled);
+                        setIsEnabled(data[0].enabled === 'true' ? 'true' : 'false');
                         setTitle(data[0].title || "");
                         setContent(data[0].content || "");
                         setStartDate(data[0].start_date ? new Date(data[0].start_date).toISOString().split('T')[0] : "");
                         setEndDate(data[0].end_date ? new Date(data[0].end_date).toISOString().split('T')[0] : "");
-                        setNotificationType(data[0].type || "info-graph");
-                        setIsEnabled(data[0].enabled !== 0 ? data[0].enabled : 0);
-                        setSelectedProducts(data[0].selected_products || []);
-                        setSelectedCategories(data[0].selected_categories || []);
-                        setTrackingType(data[0].tracking_type || "all");
+                        setNotificationType(data[0].notification_type || ""); //Notification Type : info-graph, email, message...
+                        setTrackingType(data[0].tracking_type || "all"); //Track product | date starting now, date after x, between dates...
                         setNotificationNature(data[0].notification_nature || "individual");
-                        setTrackProductsBy(data[0].track_products_by || "all");
+                        setTrackProductsBy(data[0].track_products_by || "all"); //Track product by all, products selected, category selected...
+                        setSelectedProducts(data[0].selected_products || []); //Track product by products selected
+                        setSelectedCategories(data[0].selected_categories || []); //Track product by category selected...
                         setPriceHistoryTitle(data[0].price_history_title || "");
-                        SetisEnabledInfoGraph(data[0].enabled_info_graph || "");
+                        setEmailHeader(data[0].email_header || "");
+                        setIsEnabledInfoGraph(data[0].enabled_info_graph === 'true' ? 'true' : 'false');
                     }
                 })
                 .catch((err) => console.error("Error fetching notification:", err));
-            console.log(notificationType);
         }
     }, [id]);
 
@@ -97,6 +99,7 @@ const NotificationForm = () => {
                 method,
                 headers: {
                     "Content-Type": "application/json",
+                    'X-WP-Nonce': wpApiSettings.nonce, // Use the nonce for authentication
                 },
                 body: JSON.stringify({
                     title,
@@ -104,7 +107,7 @@ const NotificationForm = () => {
                     tracking_type: trackingType,
                     start_date: startDate,
                     end_date: endDate,
-                    type: notificationType,
+                    notification_type: notificationType,
                     enabled: isEnabled,
                     selected_categories: selectedCategories,
                     selected_products: selectedProducts,
@@ -117,14 +120,19 @@ const NotificationForm = () => {
             });
 
             if (!response.ok) {
-                throw new Error("Failed to save");
+                const errorData = await response.json();
+                throw new Error(errorData.message || "Failed to save");
             } else {
-                console.log(response);
-                setNotifMessage("Notification saved successfully!");
-                setNotifType("success");
-
+                const responseData = await response.json();
+                if (responseData.message) {
+                    setNotifMessage(responseData.message);
+                    setNotifType(responseData.success ? "success" : "error");
+                } else {
+                    setNotifMessage('Default Message');
+                    setNotifType(responseData.success ? "success" : "error");
+                }
                 setTimeout(() => {
-                    setNotifMessage(""); // Clear after 3 seconds
+                    setNotifMessage(""); // Clear after 4 seconds
                 }, 4000);
 
                 // Redirect to the correct route
@@ -132,8 +140,7 @@ const NotificationForm = () => {
                     navigate(`/edit/${id}`);
                 } else {
                     // After creation, redirect to the edit page of the new notification
-                    const createdData = await response.json();
-                    navigate(`/edit/${createdData.id}`);
+                    navigate(`/edit/${responseData.id}`);
                 }
             }
         } catch (err) {
@@ -193,7 +200,9 @@ const NotificationForm = () => {
     const customComponents = {
         MultiValueRemove: () => null, // Disables the delete (✖) icon
     };
-
+    useEffect(() => {
+        //console.log('isEnabled changed:', isEnabled);
+    }, [isEnabled]);
     return (
         <div className="container form-wrapper">
             <div className="header-section">
@@ -203,237 +212,273 @@ const NotificationForm = () => {
             <div className="form-container">
 
                 <form onSubmit={handleSubmit}>
-                    <div class="row">
-                        <div className="col-25">
-                            <label for="fname"> Enable Notification</label>
-                        </div>
-                        <div className="col-75">
-                            <input
-                                type="checkbox"
-                                checked={isEnabled}
-                                onChange={(e) => setIsEnabled(e.target.checked)}
-                            />
-                            Enable/Disable
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div className="col-25">
-                            <label for="fname">Title</label>
-                        </div>
-                        <div className="col-75">
-                            <input
-                                type="text"
-                                value={title}
-                                onChange={(e) => setTitle(e.target.value)}
-                                required
-                            />
-                        </div>
-                    </div>
+                    <section>
+                        <div className="row">
+                            <div className="col-25">
+                                <label htmlFor="enableNotification">Enable Notification</label>
+                            </div>
+                            <div className="col-75">
 
-                    <div className="section-title"><h2>What to Send</h2></div>
+                                <input
+                                    type="checkbox"
+                                    id="enableNotification"
+                                    checked={isEnabled == 'true'}
+                                    onChange={(e) => setIsEnabled(e.target.checked ? 'true' : 'false')}
+                                />
+                                <span htmlFor="enableNotification"> Enable/Disable</span>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div className="col-25">
+                                <label for="fname">Title</label>
+                            </div>
+                            <div className="col-75">
+                                <input
+                                    type="text"
+                                    value={title}
+                                    onChange={(e) => setTitle(e.target.value)}
+                                    required
+                                />
+                            </div>
+                        </div>
+                    </section>
+                    <section>
+                        <div className="section-title"><h2>What to Send</h2></div>
 
-                    <div class="row">
-                        <div className="col-25">
-                            <label for="fname">Notification Type</label>
+                        <div class="row">
+                            <div className="col-25">
+                                <label for="fname">Notification Type</label>
+                            </div>
+                            <div className="col-75">
+                                <select name="type" value={notificationType} onChange={(e) => setNotificationType(e.target.value)}>
+                                    {notificationTypeOptions.map((option, index) => (
+                                        <option key={index} value={option.value}>
+                                            {option.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
                         </div>
-                        <div className="col-75">
-                            <select name="type" value={notificationType} onChange={(e) => setNotificationType(e.target.value)}>
-                                {notificationTypeOptions.map((option, index) => (
-                                    <option key={index} value={option.value}>
-                                        {option.label}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                    </div>
-                    {console.log('notificationType ', notificationType)}
+                    </section>
                     {notificationType && notificationType === 'info-graph' && (
                         <>
-                            {/* Enable Graph */}
-                            <div className="row">
-                                <div className="col-25">
-                                    <label htmlFor="enableGraph">Enable Graph</label>
-                                </div>
-                                <div className="col-75">
-                                    <input
-                                        type="checkbox"
-                                        id="enableGraph"
-                                        checked={isEnabledInfoGraph}
-                                        onChange={(e) => SetisEnabledInfoGraph(e.target.checked)}
-                                    />
-                                    <span> Enable/Disable</span>
-                                </div>
-                            </div>
 
-                            {/* Notification Content */}
-                            <div className="row">
-                                <div className="col-25">
-                                    <label htmlFor="notificationContent">Notification Content</label>
-                                </div>
-                                <div className="col-75">
-                                    <textarea
-                                        id="notificationContent"
-                                        value={content}
-                                        onChange={(e) => setContent(e.target.value)}
-                                        required
-                                    ></textarea>
-                                </div>
-                            </div>
-
-                            {/* What to Track */}
-                            <div className="section-title">
-                                <h2>What to Track</h2>
-                            </div>
-                            <div className="row">
-                                <div className="col-25">
-                                    <label htmlFor="trackProductsBy">Track Products By</label>
-                                </div>
-                                <div className="col-75">
-                                    <select
-                                        name="type"
-                                        id="trackProductsBy"
-                                        value={trackProductsBy}
-                                        onChange={(e) => setTrackProductsBy(e.target.value)}
-                                    >
-                                        <option value="all">All Products</option>
-                                        <option value="categories">Categories</option>
-                                        <option value="products">Products</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            {/* Product Category Selector (if tracking by categories) */}
-                            {trackProductsBy === 'categories' && (
+                            <section>
+                                <div className="section-title"><h2> Infograph Configuration</h2><hr /></div>
+                                {/* Enable Graph */}
                                 <div className="row">
                                     <div className="col-25">
-                                        <label htmlFor="productCategory">Product Category</label>
+                                        <label htmlFor="enableGraph">Enable Graph</label>
                                     </div>
                                     <div className="col-75">
-                                        <AsyncSelect
-                                            classNamePrefix="pricedropnotifexpert-select"
-                                            isMulti
-                                            cacheOptions
-                                            defaultOptions
-                                            loadOptions={fetchProductCategories}
-                                            onChange={(selectedOptions) => setSelectedCategories(selectedOptions)}
-                                            placeholder="Select product categories..."
-                                            value={selectedCategories}
+                                        <input
+                                            type="checkbox"
+                                            id="enableGraph"
+                                            checked={isEnabledInfoGraph == 'true'}
+                                            onChange={(e) => setIsEnabledInfoGraph(e.target.checked ? 'true' : 'false')}
                                         />
+                                        <span> Enable/Disable</span>
                                     </div>
                                 </div>
-                            )}
 
-                            {/* Specific Products Selector (if tracking by products) */}
-                            {trackProductsBy === 'products' && (
+                                {/* Notification Content */}
                                 <div className="row">
                                     <div className="col-25">
-                                        <label htmlFor="specificProducts">Track only Specific Products</label>
+                                        <label htmlFor="notificationContent">Notification Content</label>
                                     </div>
                                     <div className="col-75">
-                                        <AsyncSelect
-                                            classNamePrefix="pricedropnotifexpert-select"
-                                            isMulti
-                                            cacheOptions
-                                            defaultOptions
-                                            loadOptions={loadOptions}
-                                            onChange={(selectedOptions) => handleSelectChange(selectedOptions)}
-                                            placeholder="Search and select products..."
-                                            closeMenuOnSelect={false}
-                                            value={selectedProducts}
-                                            components={customComponents}
+                                        <textarea
+                                            id="notificationContent"
+                                            value={content}
+                                            onChange={(e) => setContent(e.target.value)}
+                                            required
+                                        ></textarea>
+                                    </div>
+                                </div>
+
+                                {/* What to Track */}
+                                <div className="section-title">
+                                    <h2>What to Track</h2>
+                                </div>
+                                <div className="row">
+                                    <div className="col-25">
+                                        <label htmlFor="trackProductsBy">Track Products By</label>
+                                    </div>
+                                    <div className="col-75">
+                                        <select
+                                            name="type"
+                                            id="trackProductsBy"
+                                            value={trackProductsBy}
+                                            onChange={(e) => setTrackProductsBy(e.target.value)}
+                                        >
+                                            <option value="all">All Products</option>
+                                            <option value="categories">Categories</option>
+                                            <option value="products">Products</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                {/* Product Category Selector (if tracking by categories) */}
+                                {trackProductsBy === 'categories' && (
+                                    <div className="row">
+                                        <div className="col-25">
+                                            <label htmlFor="productCategory">Product Category</label>
+                                        </div>
+                                        <div className="col-75">
+                                            <AsyncSelect
+                                                classNamePrefix="pricedropnotifexpert-select"
+                                                isMulti
+                                                cacheOptions
+                                                defaultOptions
+                                                loadOptions={fetchProductCategories}
+                                                onChange={(selectedOptions) => setSelectedCategories(selectedOptions)}
+                                                placeholder="Select product categories..."
+                                                value={selectedCategories}
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Specific Products Selector (if tracking by products) */}
+                                {trackProductsBy === 'products' && (
+                                    <div className="row">
+                                        <div className="col-25">
+                                            <label htmlFor="specificProducts">Track only Specific Products</label>
+                                        </div>
+                                        <div className="col-75">
+                                            <AsyncSelect
+                                                classNamePrefix="pricedropnotifexpert-select"
+                                                isMulti
+                                                cacheOptions
+                                                defaultOptions
+                                                loadOptions={loadOptions}
+                                                onChange={(selectedOptions) => handleSelectChange(selectedOptions)}
+                                                placeholder="Search and select products..."
+                                                closeMenuOnSelect={false}
+                                                value={selectedProducts}
+                                                components={customComponents}
+                                            />
+                                            {selectedProducts.length > 0 && (
+                                                <div className="selected-products-list">
+                                                    <ul>
+                                                        {selectedProducts.map((product) => (
+                                                            <li key={product.value}>
+                                                                <span>{product.label} (ID: {product.value})</span>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() =>
+                                                                        setSelectedProducts(
+                                                                            selectedProducts.filter((p) => p.value !== product.value)
+                                                                        )
+                                                                    }
+                                                                    className="remove-product-btn"
+                                                                >
+                                                                    &times;
+                                                                </button>
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* How to Track */}
+                                <div className="section-title">
+                                    <h2>How to Track</h2>
+                                </div>
+                                <div className="row">
+                                    <div className="col-25">
+                                        <label htmlFor="trackingType">Tracking Type</label>
+                                    </div>
+                                    <div className="col-75">
+                                        <select
+                                            name="tracking_type"
+                                            id="trackingType"
+                                            value={trackingType}
+                                            onChange={(e) => setTrackingType(e.target.value)}
+                                        >
+                                            <option value="all">All Changes (Starting Now)</option>
+                                            <option value="from-specific-date">From Specific Date</option>
+                                            <option value="at-specific-date">At Specific Date</option>
+                                            <option value="between-dates">Between Specific Dates</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                {/* Date Selector */}
+                                <div className="row">
+                                    <div className="col-25">
+                                        <label htmlFor="start_date">
+                                            {trackingType === 'between-dates' ? 'Date Range' : 'Date'}
+                                        </label>
+                                    </div>
+                                    <div className="col-75">
+                                        <input
+                                            type="date"
+                                            name="start_date"
+                                            id="start_date"
+                                            value={startDate}
+                                            onChange={(e) => setStartDate(e.target.value)}
+                                            required
                                         />
-                                        {selectedProducts.length > 0 && (
-                                            <div className="selected-products-list">
-                                                <ul>
-                                                    {selectedProducts.map((product) => (
-                                                        <li key={product.value}>
-                                                            <span>{product.label} (ID: {product.value})</span>
-                                                            <button
-                                                                type="button"
-                                                                onClick={() =>
-                                                                    setSelectedProducts(
-                                                                        selectedProducts.filter((p) => p.value !== product.value)
-                                                                    )
-                                                                }
-                                                                className="remove-product-btn"
-                                                            >
-                                                                &times;
-                                                            </button>
-                                                        </li>
-                                                    ))}
-                                                </ul>
-                                            </div>
+                                        {trackingType === 'between-dates' && (
+                                            <input
+                                                type="date"
+                                                name="end_date"
+                                                id="end_date"
+                                                value={endDate}
+                                                onChange={(e) => setEndDate(e.target.value)}
+                                            />
                                         )}
                                     </div>
                                 </div>
-                            )}
-
-                            {/* How to Track */}
-                            <div className="section-title">
-                                <h2>How to Track</h2>
-                            </div>
-                            <div className="row">
-                                <div className="col-25">
-                                    <label htmlFor="trackingType">Tracking Type</label>
-                                </div>
-                                <div className="col-75">
-                                    <select
-                                        name="tracking_type"
-                                        id="trackingType"
-                                        value={trackingType}
-                                        onChange={(e) => setTrackingType(e.target.value)}
-                                    >
-                                        <option value="all">All Changes (Starting Now)</option>
-                                        <option value="from-specific-date">From Specific Date</option>
-                                        <option value="at-specific-date">At Specific Date</option>
-                                        <option value="between-dates">Between Specific Dates</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            {/* Date Selector */}
-                            <div className="row">
-                                <div className="col-25">
-                                    <label htmlFor="start_date">
-                                        {trackingType === 'between-dates' ? 'Date Range' : 'Date'}
-                                    </label>
-                                </div>
-                                <div className="col-75">
-                                    <input
-                                        type="date"
-                                        name="start_date"
-                                        id="start_date"
-                                        value={startDate}
-                                        onChange={(e) => setStartDate(e.target.value)}
-                                        required
-                                    />
-                                    {trackingType === 'between-dates' && (
-                                        <input
-                                            type="date"
-                                            name="end_date"
-                                            id="end_date"
-                                            value={endDate}
-                                            onChange={(e) => setEndDate(e.target.value)}
-                                        />
-                                    )}
-                                </div>
-                            </div>
+                            </section>
                         </>
                     )}
+                    {notificationType && notificationType === 'email' && (
+                        <>
 
-                    <div className="button-wrapper">
-                        {/* Submit and Cancel Buttons */}
-                        <button type="submit" className="pdne-primary-btn save-add-btn">
-                            <Dashicon icon={id ? "cloud-saved" : "insert"} /> <span>{id ? " Update" : "Create"}</span>
-                        </button>
-                        <button type="button" className="pdne-primary-btn cancel-btn" onClick={() => navigate("/")}>Cancel</button>
-                    </div>
+                            <section>
+                                <div className="section-title"><h2>Email Configuration</h2><hr /></div>
+                                {/* Enable Graph */}
+                                <div className="row">
+                                    <div className="col-25">
+                                        <label htmlFor="EMail Header">Email Subject</label>
+                                    </div>
+                                    <div className="col-75">
+                                        <input
+                                            type="text"
+                                            id="enableGraph"
+                                            value={emaillHeader}
+                                            onChange={(e) => setEmaillHeader(e.target.value)}
+                                        />
+                                    </div>
+                                </div>
+                            </section>
+                        </>
+                    )}
+                    <section>
+                        <div className="button-wrapper">
+                            {/* Submit and Cancel Buttons */}
+                            <button type="submit" className="pdne-primary-btn save-add-btn">
+                                <Dashicon icon={id ? "cloud-saved" : "insert"} /> <span>{id ? " Update" : "Create"}</span>
+                            </button>
+                            <button type="button" className="pdne-primary-btn cancel-btn" onClick={() => navigate("/")}>Cancel</button>
+                        </div>
+                    </section>
                 </form>
                 {
                     notifMessage && (
-                        <span className={`error-success-notif-message ${notifType}`}>
-                            {notifMessage}
-                        </span>
+                        <>
+                            <span className={`error-success-notif-message ${notifType}`}>
+                                {notifMessage}
+                            </span>
+                            <span>
+                                {notifMessage}
+                            </span>
+                        </>
                     )
                 }
             </div >
