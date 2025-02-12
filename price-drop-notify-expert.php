@@ -37,7 +37,7 @@ if (!defined('WPINC')) {
  * Rename this for your plugin and update it as you release new versions.
  */
 define('PRICE_DROP_NOTIFY_EXPERT_VERSION', '1.0.0');
-
+define('PRICE_DROP_NOTIFY_ROOT_PATH', plugin_dir_path(__FILE__));
 /**
  * The code that runs during plugin activation.
  * This action is documented in includes/class-price-drop-notify-expert-activator.php

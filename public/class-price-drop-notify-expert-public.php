@@ -73,7 +73,7 @@ class Price_Drop_Notify_Expert_Public {
 		 * class.
 		 */
 
-		wp_enqueue_style($this->plugin_name, plugin_dir_url(__FILE__) . 'css/price-drop-notify-expert-public.css', array(), $this->version, 'all');
+		wp_enqueue_style($this->plugin_name, plugin_dir_url(__FILE__) . 'css/public.css', array(), $this->version, 'all');
 
 	}
 
@@ -96,7 +96,8 @@ class Price_Drop_Notify_Expert_Public {
 		 * class.
 		 */
 
-		wp_enqueue_script($this->plugin_name, plugin_dir_url(__FILE__) . 'js/price-drop-notify-expert-public.js', array('jquery'), $this->version, false);
+		wp_enqueue_script($this->plugin_name, plugin_dir_url(__FILE__) . 'js/public.js', array('jquery'), $this->version, false);
+		wp_enqueue_script('chart-js', '//cdn.jsdelivr.net/npm/chart.js', array('jquery'), $this->version, false);
 		wp_localize_script($this->plugin_name, 'pcne_ajax_object', array(
 			'ajax_url' => admin_url('admin-ajax.php'),
 			'pcne_nonce' => wp_create_nonce('pcne_nonce') // Create nonce
@@ -104,28 +105,139 @@ class Price_Drop_Notify_Expert_Public {
 	}
 	public function simple_popup_form_shortcode() {
 		ob_start();
-		?>
-		<button id="pcne-open-form-btn" class="button">Notify me on price drop</button>
 
-		<div id="pcne-form-popup" class="pcne-popup-overlay">
-			<div class="pcne-popup-content">
-				<span id="pcne-close-form-btn">&times;</span>
-				<h2>Please fill out this form</h2>
-				<form id="pcne-product-popup-form" data-product-id="<?php echo get_the_ID(); ?>">
-					<?php if (is_user_logged_in()): ?>
-						<label>
-							<input type="checkbox" id="pcne-autofill-details"> Use my saved details
-						</label>
+		// Check if we are on a product page
+		if (is_product()) {
+			global $product;
+
+			// Get the product type
+			$product_type = $product->get_type();
+
+			// Initialize variable products array
+			$variable_products = [];
+
+			// If the product is variable, get variations
+			$options = get_option('price_drop_notification_expert');
+			$prefill_form_data = isset($options['form']['prefill_form_data']) ? checked($options['form']['prefill_form_data'], 1, false) : '';
+			?>
+
+			<button id="pcne-open-form-btn"
+				class="button"><?= isset($options['form']['button_text']) ? $options['form']['button_text'] : __('Notify me on price drop', ''); ?></button>
+			<div id="pcne-form-popup" class="pcne-popup-overlay">
+				<div class="pcne-popup-content">
+					<span id="pcne-close-form-btn">&times;</span>
+
+					<?php if (isset($options['form']['title'])): ?>
+						<h2><?php echo isset($options['form']['title']) ? $options['form']['title'] : __('Price Drop Notifiy Form', ''); ?>
+						</h2>
 					<?php endif; ?>
-					<input type="text" name="name" id="name" placeholder="Your Name" required autocomplete="name">
-					<input type="email" name="email" id="email" placeholder="Your Email" required autocomplete="email">
-					<input type="tel" name="phone" id="phone" placeholder="Your Phone" required autocomplete="phone">
-					<button type="submit" class="button button-primary">Submit</button>
-				</form>
-				<div id="pcne-form-response"></div>
+
+					<?php if (isset($options['form']['title'])): ?>
+						<div>
+							<p><?php echo isset($options['form']['description']) ? $options['form']['description'] : ''; ?></p>
+						</div>
+					<?php endif; ?>
+					<form id="pcne-product-popup-form" <?php if ($product_type === 'variable') { ?>data-variable-data="<?php echo json_encode($variable_products); ?>" <?php } ?>
+						data-product-id="<?php echo get_the_ID(); ?>">
+
+						<?php if (is_user_logged_in() && $prefill_form_data): ?>
+							<label>
+								<input type="checkbox" id="pcne-autofill-details"> Use my saved details
+							</label>
+						<?php endif; ?>
+						<div class="row">
+							<div class="col-25">
+								<label for="notificationNature">Name</label>
+							</div>
+							<div class="col-75">
+								<input type="text" name="name" id="name" placeholder="Your Name" required autocomplete="name">
+							</div>
+						</div>
+						<div class="row">
+							<div class="col-25">
+								<label for="notificationNature">Email</label>
+							</div>
+							<div class="col-75">
+								<input type="email" name="email" id="email" placeholder="Your Email" required autocomplete="email">
+							</div>
+						</div>
+						<div class="row">
+							<div class="col-25">
+								<label for="notificationNature">Phone</label>
+							</div>
+							<div class="col-75">
+								<input type="tel" name="phone" id="phone" placeholder="Your Phone" required autocomplete="phone">
+							</div>
+						</div>
+						<?php
+						$variable_products = [];
+						if ($product_type === 'variable') {
+							$available_variations = $product->get_available_variations();
+							$attributes = $product->get_attributes();
+
+							// Store variations by attributes
+							foreach ($available_variations as $variation) {
+								$variation_attributes = $variation['attributes'];
+								$variation_id = $variation['variation_id'];
+								$variation_stock = $variation['is_in_stock'] ? 'In Stock' : 'Out of Stock';
+
+								// Store the variation by its attributes
+								$variable_products[$variation_id] = [
+									'attributes' => $variation_attributes,
+									'stock' => $variation_stock,
+								];
+							}
+
+							?>
+							<div id="attribute-selects">
+								<h2>Additional Attributes</h2>
+								<?php foreach ($attributes as $attribute_name => $attribute):
+									$terms = get_terms([
+										'taxonomy' => $attribute_name,
+										'hide_empty' => false,
+									]);
+									if (is_array($terms)) {
+										?>
+										<div class="row">
+											<div class="col-25">
+												<label
+													for="<?php echo esc_attr($attribute_name); ?>"><?php echo esc_html(str_replace('pa_', '', $attribute['name'])); ?></label>
+											</div>
+											<div class="col-75">
+												<select class="attribute-select" data-attribute="<?php echo esc_attr($attribute_name); ?>">
+													<option value="">Select <?php echo esc_html(str_replace('pa_', '', $attribute['name'])); ?>
+													</option>
+													<?php
+													// Get the terms for the attribute
+							
+
+													// Create options for each term
+							
+													foreach ($terms as $term): ?>
+														<option value="<?php echo esc_attr($term->term_id); ?>"><?php echo esc_html($term->name); ?>
+														</option>
+													<?php endforeach; ?>
+
+												</select>
+											</div>
+										</div>
+									<?php }
+									?>
+								<?php endforeach; ?>
+							</div>
+						<?php } ?>
+						<div class="row">
+							<div class="col-75">
+								<button type="submit" class="button button-primary">Submit</button>
+							</div>
+						</div>
+					</form>
+					<div id="pcne-form-response"></div>
+				</div>
 			</div>
-		</div>
-		<?php
+			<?php
+		}
+
 		return ob_get_clean();
 	}
 	/**
@@ -143,7 +255,18 @@ class Price_Drop_Notify_Expert_Public {
 	 * @return void
 	 */
 	public function handle_form_submission() {
-		$formData = array_map('sanitize_text_field', $_POST['formData']);
+		$formData = array_map(function ($item) {
+			if (is_array($item)) {
+				return array_map(function ($sub_item) {
+					if (is_array($sub_item)) {
+						return array_map('sanitize_text_field', $sub_item);
+					}
+					return sanitize_text_field($sub_item);
+				}, $item);
+			}
+			return sanitize_text_field($item);
+		}, $_POST['formData']);
+
 		if (!isset($_POST['pcne_nonce']) || !wp_verify_nonce($_POST['pcne_nonce'], 'pcne_nonce')) {
 			wp_send_json(array("status" => "error", "message" => "Invalid nonce!"));
 			wp_die();
@@ -163,7 +286,7 @@ class Price_Drop_Notify_Expert_Public {
 		$name = isset($formData['name']) ? sanitize_text_field($formData['name']) : '';
 		$email = isset($formData['email']) ? sanitize_email($formData['email']) : '';
 		$phone = isset($formData['phone']) ? sanitize_text_field($formData['phone']) : '';
-
+		$selected_attributes = isset($formData['selected_attributes']) ? json_encode($formData['selected_attributes']) : '';
 		// Check if a record with the same email or phone already exists
 		$existing_entry = $wpdb->get_row(
 			$wpdb->prepare(
@@ -180,13 +303,14 @@ class Price_Drop_Notify_Expert_Public {
 				[
 					'user_id' => $user_id,
 					'product_id' => $product_id,
+					'variable_data' => $selected_attributes,
 					'name' => $name,
 					'email' => $email,
 					'phone' => $phone,
 					'submitted_at' => current_time('mysql'),
 				],
 				['id' => $existing_entry->id],
-				['%d', '%d', '%s', '%s', '%s', '%s'],
+				['%d', '%d', '%s', '%s', '%s', '%s', '%s'],
 				['%d']
 			);
 		} else {
@@ -194,14 +318,16 @@ class Price_Drop_Notify_Expert_Public {
 			$data_update = $wpdb->insert(
 				$table_name,
 				[
+					'id' => '',
 					'user_id' => $user_id,
 					'product_id' => $product_id,
+					'variable_data' => $selected_attributes,
 					'name' => $name,
 					'email' => $email,
 					'phone' => $phone,
 					'submitted_at' => current_time('mysql'),
 				],
-				['%d', '%d', '%s', '%s', '%s', '%s']
+				['%d', '%d', '%s', '%s', '%s', '%s', '%s', '%s']
 			);
 		}
 
@@ -217,6 +343,10 @@ class Price_Drop_Notify_Expert_Public {
 
 		if (!is_email($email)) {
 			wp_send_json(array("status" => "error", "message" => "Invalid email address!"));
+			wp_die();
+		}
+		if ($data_update) {
+			wp_send_json(array("status" => "success", "message" => "Thank you! We will contact you soon."));
 			wp_die();
 		}
 
@@ -238,9 +368,9 @@ class Price_Drop_Notify_Expert_Public {
 
 	/**
 	 * Get User info to pull information from the user profile if any
-	 * @return never
+	 * @return $response
 	 */
-	function get_user_info() {
+	public function get_user_info() {
 
 		if (!is_user_logged_in()) {
 			wp_send_json_error(['message' => 'User not logged in']);
@@ -261,6 +391,23 @@ class Price_Drop_Notify_Expert_Public {
 		];
 
 		wp_send_json_success($response);
+	}
+	public function display_price_history_stats_and_graph() {
+		global $product;
+		$filtered_price_history = process_notifications($product->get_ID());
+		if (!empty($filtered_price_history)) {
+			view_price_history_stats_and_graph($filtered_price_history);
+		}
+	}
+
+	public function custom_trigger_action() {
+
+		if (is_product()) {
+			global $product;
+			do_action('price_drop_notify_expert_price_dropped', $product->get_ID());
+		} else {
+			error_log('price_drop_notify_expert_price_dropped was not called: No valid product.');
+		}
 	}
 
 }

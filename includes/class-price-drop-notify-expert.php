@@ -87,9 +87,8 @@ class Price_Drop_Notify_Expert {
 		$this->set_locale();
 		$this->define_endpoints_hooks();
 		$this->define_admin_hooks();
+		$this->define_front_hooks();
 		$this->define_public_hooks();
-
-
 	}
 
 	/**
@@ -179,9 +178,11 @@ class Price_Drop_Notify_Expert {
 		//Add Menu settings
 		$this->loader->add_action('admin_menu', $plugin_admin, 'add_admin_menu');
 		$this->loader->add_action('admin_init', $plugin_admin, 'register_settings');
+		$this->loader->add_action('admin_init', $plugin_admin, 'register_form_settings');
 
 		//Check price changes
 		$this->loader->add_action('woocommerce_process_product_meta', $plugin_admin, 'track_price_changes');
+		$this->loader->add_action('wp_footer', $plugin_admin, 'sssssssssssssss', 10, 3);
 	}
 	/**
 	 * Register all of the hooks related to the endpoint and actions
@@ -207,7 +208,7 @@ class Price_Drop_Notify_Expert {
 	 * @since    1.0.0
 	 * @access   private
 	 */
-	private function define_public_hooks() {
+	private function define_front_hooks() {
 
 		$plugin_public = new Price_Drop_Notify_Expert_Public($this->get_plugin_name(), $this->get_version());
 
@@ -219,8 +220,22 @@ class Price_Drop_Notify_Expert {
 		$this->loader->add_action('wp_ajax_get_user_info', $plugin_public, 'get_user_info');
 		$this->loader->add_action('wp_ajax_nopriv_wp_ajax_get_user_info', $plugin_public, 'get_user_info');
 		$this->loader->add_action('woocommerce_single_product_summary', $plugin_public, 'add_popup_form_to_product', 15);
+		$this->loader->add_action('woocommerce_single_product_summary', $plugin_public, 'display_price_history_stats_and_graph', 15);
+
+		//Test to trigger email
+		//$this->loader->add_action('woocommerce_before_single_product', $plugin_public, 'custom_trigger_action', 10, 0);
+
 	}
 
+	/**
+	 * All public action hook from plugin
+	 * @return void
+	 * @since 1.0.0
+	 */
+	private function define_public_hooks() {
+		//Action Trigger Hook of plugin
+		add_action('price_drop_notify_expert_price_dropped', 'trigger_price_change_email_notification', 10, 1);
+	}
 	/**
 	 * Run the loader to execute all of the hooks with WordPress.
 	 *

@@ -52,9 +52,10 @@ class Price_Drop_Notify_Expert_Activator {
             id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
             user_id BIGINT UNSIGNED NULL DEFAULT NULL,
             product_id BIGINT UNSIGNED NOT NULL,
+			variable_data TEXT NOT NULL,
             name VARCHAR(255) NOT NULL,
             email VARCHAR(255) NOT NULL,
-            phone VARCHAR(20) NOT NULL,
+			phone VARCHAR(30) NOT NULL,
             submitted_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (id)
         ) $charset_collate;";
@@ -71,11 +72,12 @@ class Price_Drop_Notify_Expert_Activator {
 		$sql = "CREATE TABLE $table_name (
 			id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
 			product_id BIGINT UNSIGNED NOT NULL,
-			variation_id BIGINT UNSIGNED DEFAULT NULL,
+			variation_id BIGINT UNSIGNED NULL DEFAULT NULL,
 			price_history LONGTEXT NOT NULL, 
 			change_date DATETIME DEFAULT CURRENT_TIMESTAMP,
-			INDEX (product_id),
-			INDEX (variation_id)
+			INDEX idx_product_id (product_id),
+			INDEX idx_variation_id (variation_id),
+			INDEX idx_change_date (change_date)
 		) $charset_collate;";
 
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';

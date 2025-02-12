@@ -57,9 +57,9 @@ class Price_Drop_Notify_Expert_Loader {
 	 */
 	public function __construct() {
 
-		$this->actions = array();
-		$this->filters = array();
-		$this->shortcodes = array();
+		$this->actions = [];
+		$this->filters = [];
+		$this->shortcodes = [];
 	}
 
 	/**
@@ -106,13 +106,13 @@ class Price_Drop_Notify_Expert_Loader {
 	 */
 	private function add($hooks, $hook, $component, $callback, $priority, $accepted_args) {
 
-		$hooks[] = array(
+		$hooks[] = [
 			'hook' => $hook,
 			'component' => $component,
 			'callback' => $callback,
 			'priority' => $priority,
 			'accepted_args' => $accepted_args,
-		);
+		];
 
 		return $hooks;
 
@@ -144,11 +144,11 @@ class Price_Drop_Notify_Expert_Loader {
 	 */
 	private function add_shortcode_to_collection($shortcodes, $tag, $component, $callback) {
 
-		$shortcodes[] = array(
+		$shortcodes[] = [
 			'tag' => $tag,
 			'component' => $component,
 			'callback' => $callback,
-		);
+		];
 
 		return $shortcodes;
 

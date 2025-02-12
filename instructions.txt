@@ -1,0 +1,19 @@
+
+Special Note : run following action inside admin and not plugin landing directory
+
+# Add plugin dependecies by : 
+npm install
+
+# Run development mode or build mode
+npm run start
+	or
+npm run build
+ 
+# Using hook to add new option for field 
+import { addFilter } from '@wordpress/hooks';
+addFilter('custom_notification_options', 'your-namespace', (options) => {
+    return [
+        ...options,
+        { value: 'sms', label: 'SMS Notification' },
+    ];
+});
