@@ -335,7 +335,6 @@ function get_custom_email_template($template_name, $args = []) {
 
     // Make sure the template file exists in your plugin
     if (!file_exists($template_path . $template_name)) {
-        error_log("Template not found: " . $template_path . $template_name);
         return 'Error: Template not found!';
     }
 
@@ -445,5 +444,96 @@ function trigger_price_change_email_notification($product_id) {
             '',
             ''
         );
+    }
+}
+
+function trigger_price_change_firebase_push_notification($product_id) {
+    global $wpdb;
+
+    $server_key = 'AIzaSyDNCTIga_URLSJWzHlFXGArE8CVwGCVFk0';
+    $url = 'https://fcm.googleapis.com/fcm/send';
+
+    $price_history_table = $wpdb->prefix . 'price_drop_notify_price_history';
+    $contacts_table = $wpdb->prefix . 'price_drop_notify_expert_contacts';
+
+    // Get all price history records for the product
+    $price_history_rows = $wpdb->get_results($wpdb->prepare(
+        "SELECT * FROM $price_history_table WHERE product_id = %d",
+        $product_id
+    ));
+
+    if (!$price_history_rows) {
+        return; // No price history found
+    }
+
+    // Get most recent price history
+    $latest_history = end($price_history_rows);
+    $price_history = json_decode($latest_history->price_history, true);
+    $most_recent = end($price_history);
+
+    // Get subscribers
+    $contacts = $wpdb->get_results($wpdb->prepare(
+        "SELECT * FROM $contacts_table WHERE product_id = %d",
+        $product_id
+    ));
+
+    if (empty($contacts)) {
+        return; // No subscribers
+    }
+
+    foreach ($contacts as $contact) {
+        if (!isset($contact->token) || empty($contact))
+            return;
+        $data = [];
+        // Add variation data if exists
+        if (!empty($contact->variable_data)) {
+            $variation_data = json_decode($contact->variable_data, true);
+
+            if (JSON_ERROR_NONE === json_last_error()) {
+                $attributes = [];
+                foreach ($variation_data as $taxonomy => $values) {
+                    // Clean attribute name (remove 'pa_' prefix)
+                    $clean_name = ucfirst(str_replace('pa_', '', $taxonomy));
+                    if (isset($values['label'])) {
+                        $attributes[] = sprintf(
+                            '%s: %s',
+                            $clean_name,
+                            sanitize_text_field($values['label'])
+                        );
+                    }
+                }
+                $data['variation_attributes'] = $attributes;
+            }
+        }
+
+        $fields = [
+            'to' => $contact->token, // Single device token
+            'notification' => [
+                'title' => '🔥 Price Drop Alert!',
+                'body' => "New price: ",
+                'icon' => 'https://example.com/icon.png', // Optional: Change to your app's icon
+                'click_action' => 'https://example.com' // URL to open on click
+            ],
+            'data' => $data,
+        ];
+
+        $headers = [
+            'Authorization: key=' . $server_key,
+            'Content-Type: application/json',
+        ];
+
+        // Initialize cURL
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($fields));
+
+        $response = curl_exec($ch);
+        curl_close($ch);
+        error_log('firebase reponse : ' . print_r($response, true));
+        return $response;
     }
 }

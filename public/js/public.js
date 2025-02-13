@@ -29,6 +29,8 @@
 	 * practising this, we should strive to set a better example in our own work.
 	 */
 	document.addEventListener("DOMContentLoaded", function () {
+
+
 		let popup = document.getElementById("pcne-form-popup");
 		let openBtn = document.getElementById("pcne-open-form-btn");
 		let closeBtn = document.getElementById("pcne-close-form-btn");
@@ -110,52 +112,115 @@
 			});
 		});
 
-		// Handle form submission
-		$('#pcne-product-popup-form').on('submit', function (e) {
-			e.preventDefault();
 
-			var formData = {
-				name: $(this).find('#name').val(),
-				email: $(this).find('#email').val(),
-				phone: $(this).find('#phone').val(),
-				product_id: $(this).data('product-id'),
-				selected_attributes: {} // Initialize selected attributes
+		/** 
+		 * Firebase Configuration
+		 */
+
+		// With this initialization flow
+		const initializeFirebase = async () => {
+			try {
+				if (!firebase.apps.length) {
+					await firebase.initializeApp({
+						apiKey: "AIzaSyDNCTIga_URLSJWzHlFXGArE8CVwGCVFk0",
+						authDomain: "price-drop-45bc4.firebaseapp.com",
+						projectId: "price-drop-45bc4",
+						storageBucket: "price-drop-45bc4.firebasestorage.app",
+						messagingSenderId: "236199324060",
+						appId: "1:236199324060:web:fcb7987b5d0ed6226b0059"
+					});
+				}
+
+			} catch (error) {
+				console.error('Firebase initialization error:', error);
+				return null;
+			}
+		};
+		// Handle form submission
+		$('#pcne-product-popup-form').submit(async function (e) {
+			e.preventDefault();
+			const $this = $(this);
+			const formData = {
+				name: $this.find('#name').val(),
+				email: $this.find('#email').val(),
+				phone: $this.find('#phone').val(),
+				product_id: $this.data('product-id'),
+				preferred_method_of_notify: $this.find('#preferred_method_of_notify').val(),
+				selected_attributes: {}
 			};
 
 			// Collect selected attributes
-			if ($('.attribute-select').length) {
-				$('.attribute-select').each(function () {
-					var attrName = $(this).data('attribute');
-					var selectedValue = $(this).val();
-					var selectedLabel = $(this).find('option:selected').text();
-					if (selectedValue) {
-						formData.selected_attributes[attrName] = {
-							id: selectedValue,
-							label: selectedLabel
-						};
-					}
-				});
-			}
-
-			// AJAX request
-			$.ajax({
-				type: 'POST',
-				url: pcne_ajax_object.ajax_url,
-				data: {
-					action: 'handle_form_submission',
-					formData: formData,
-					pcne_nonce: pcne_ajax_object.pcne_nonce // Include nonce here
-				},
-				success: function (response) {
-					if (response.status === 'success') {
-						$('#pcne-form-response').html('<p style="color: green;">' + response.message + '</p>');
-						$('#pcne-product-popup-form')[0].reset();
-					} else {
-						$('#pcne-form-response').html('<p style="color: red;">' + response.message + '</p>');
-					}
+			$('.attribute-select').each(function () {
+				const attrName = $(this).data('attribute');
+				const selectedValue = $(this).val();
+				const selectedLabel = $(this).find('option:selected').text();
+				if (selectedValue) {
+					formData.selected_attributes[attrName] = {
+						id: selectedValue,
+						label: selectedLabel
+					};
 				}
 			});
+
+			navigator.serviceWorker.register('/firebase-messaging-sw.js')
+				.then(async (registration) => {
+					console.log('Service Worker registered:', registration);
+
+					// Initialize Firebase if not already
+					if (!firebase.apps.length) {
+						console.log('Firebase not initialized, initializing now...');
+						firebase.initializeApp({
+							apiKey: "AIzaSyDNCTIga_URLSJWzHlFXGArE8CVwGCVFk0",
+							authDomain: "price-drop-45bc4.firebaseapp.com",
+							projectId: "price-drop-45bc4",
+							storageBucket: "price-drop-45bc4.appspot.com",
+							messagingSenderId: "236199324060",
+							appId: "1:236199324060:web:fcb7987b5d0ed6226b0059"
+						});
+					}
+
+					// Get Firebase Messaging
+					const messaging = firebase.messaging();
+
+					// Request notification permission
+					Notification.requestPermission().then(async function (permission) {
+						if (permission === 'granted') {
+							try {
+								const token = await messaging.getToken({
+									vapidKey: 'BJbUQBPEyPc6i52Af56iUJffOVjvz8RK7KYZNihRpM9r_R5kZkt-cLPzfJxjq75kmmAsXeZM7wbMGqbOnlXi1Yc',
+									serviceWorkerRegistration: registration
+								});
+
+								console.log('FCM Token:', token);
+
+								if (token) {
+									$.ajax({
+										type: 'POST',
+										url: pcne_ajax_object.ajax_url,
+										data: {
+											action: 'handle_form_submission',
+											formData: formData,
+											token: token,
+											pcne_nonce: pcne_ajax_object.pcne_nonce
+										},
+										success: function (response) {
+											$('#pcne-form-response').html(`<p style="color: ${response.status === 'success' ? 'green' : 'red'};">${response.message}</p>`);
+											if (response.status === 'success') {
+												$('#pcne-product-popup-form')[0].reset();
+											}
+										}
+									});
+								}
+
+							} catch (error) {
+								console.error('Error getting token:', error);
+							}
+						}
+					});
+				})
+				.catch((error) => console.error('Service Worker registration failed:', error));
 		});
+
 	});
 
 })(jQuery);

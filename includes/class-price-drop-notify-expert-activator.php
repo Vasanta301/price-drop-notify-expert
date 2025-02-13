@@ -56,6 +56,8 @@ class Price_Drop_Notify_Expert_Activator {
             name VARCHAR(255) NOT NULL,
             email VARCHAR(255) NOT NULL,
 			phone VARCHAR(30) NOT NULL,
+			token TEXT NOT NULL,
+			preferred_method_of_notify TEXT NOT NULL,
             submitted_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (id)
         ) $charset_collate;";
@@ -83,4 +85,5 @@ class Price_Drop_Notify_Expert_Activator {
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 		dbDelta($sql);
 	}
+
 }

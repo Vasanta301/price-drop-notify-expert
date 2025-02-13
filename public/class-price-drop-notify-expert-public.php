@@ -96,12 +96,28 @@ class Price_Drop_Notify_Expert_Public {
 		 * class.
 		 */
 
-		wp_enqueue_script($this->plugin_name, plugin_dir_url(__FILE__) . 'js/public.js', array('jquery'), $this->version, false);
+		wp_enqueue_script($this->plugin_name, plugin_dir_url(__FILE__) . 'js/public.js', array('jquery', 'firebase-app', 'firebase-messaging'), $this->version, false);
 		wp_enqueue_script('chart-js', '//cdn.jsdelivr.net/npm/chart.js', array('jquery'), $this->version, false);
 		wp_localize_script($this->plugin_name, 'pcne_ajax_object', array(
 			'ajax_url' => admin_url('admin-ajax.php'),
 			'pcne_nonce' => wp_create_nonce('pcne_nonce') // Create nonce
 		));
+		wp_enqueue_script(
+			'firebase-app',
+			'https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js',
+			[],
+			'8.10.1',
+			true
+		);
+
+
+		wp_enqueue_script(
+			'firebase-messaging',
+			'https://www.gstatic.com/firebasejs/8.10.1/firebase-messaging.js',
+			['firebase-app'],
+			'8.10.1',
+			true
+		);
 	}
 	public function simple_popup_form_shortcode() {
 		ob_start();
@@ -124,8 +140,7 @@ class Price_Drop_Notify_Expert_Public {
 			<button id="pcne-open-form-btn"
 				class="button"><?= isset($options['form']['button_text']) ? $options['form']['button_text'] : __('Notify me on price drop', ''); ?></button>
 			<div id="pcne-form-popup" class="pcne-popup-overlay">
-				<div class="pcne-popup-content">
-					<span id="pcne-close-form-btn">&times;</span>
+				<div class="pcne-popup-content"><span id="pcne-close-form-btn">&times;</span>
 
 					<?php if (isset($options['form']['title'])): ?>
 						<h2><?php echo isset($options['form']['title']) ? $options['form']['title'] : __('Price Drop Notifiy Form', ''); ?>
@@ -139,92 +154,121 @@ class Price_Drop_Notify_Expert_Public {
 					<?php endif; ?>
 					<form id="pcne-product-popup-form" <?php if ($product_type === 'variable') { ?>data-variable-data="<?php echo json_encode($variable_products); ?>" <?php } ?>
 						data-product-id="<?php echo get_the_ID(); ?>">
-
+						<?php $options = get_option('price_drop_notification_expert');
+						$formfields = isset($options['form']['fields']) ? $options['form']['fields'] : [];
+						?>
 						<?php if (is_user_logged_in() && $prefill_form_data): ?>
 							<label>
 								<input type="checkbox" id="pcne-autofill-details"> Use my saved details
 							</label>
 						<?php endif; ?>
-						<div class="row">
-							<div class="col-25">
-								<label for="notificationNature">Name</label>
-							</div>
-							<div class="col-75">
-								<input type="text" name="name" id="name" placeholder="Your Name" required autocomplete="name">
-							</div>
-						</div>
-						<div class="row">
-							<div class="col-25">
-								<label for="notificationNature">Email</label>
-							</div>
-							<div class="col-75">
-								<input type="email" name="email" id="email" placeholder="Your Email" required autocomplete="email">
-							</div>
-						</div>
-						<div class="row">
-							<div class="col-25">
-								<label for="notificationNature">Phone</label>
-							</div>
-							<div class="col-75">
-								<input type="tel" name="phone" id="phone" placeholder="Your Phone" required autocomplete="phone">
-							</div>
-						</div>
-						<?php
-						$variable_products = [];
-						if ($product_type === 'variable') {
-							$available_variations = $product->get_available_variations();
-							$attributes = $product->get_attributes();
+						<?php if (!empty($formfields)) { ?>
+							<?php foreach ($formfields as $key => $field) {
+								$field_key = $field['field_key'];
+								$label = $field['label'];
+								$required = !empty($field['required']);
+								$type = !empty($field['type']) ? $field['type'] : 'text';
+								$placeholder = 'Your ' . ucfirst($field_key);
+								if (in_array($field['field_key'], ['additional_info'])) { ?>
+									<?php
+									$variable_products = [];
+									if ($product_type === 'variable') {
+										$available_variations = $product->get_available_variations();
+										$attributes = $product->get_attributes();
 
-							// Store variations by attributes
-							foreach ($available_variations as $variation) {
-								$variation_attributes = $variation['attributes'];
-								$variation_id = $variation['variation_id'];
-								$variation_stock = $variation['is_in_stock'] ? 'In Stock' : 'Out of Stock';
+										// Store variations by attributes
+										foreach ($available_variations as $variation) {
+											$variation_attributes = $variation['attributes'];
+											$variation_id = $variation['variation_id'];
+											$variation_stock = $variation['is_in_stock'] ? 'In Stock' : 'Out of Stock';
 
-								// Store the variation by its attributes
-								$variable_products[$variation_id] = [
-									'attributes' => $variation_attributes,
-									'stock' => $variation_stock,
-								];
-							}
-
-							?>
-							<div id="attribute-selects">
-								<h2>Additional Attributes</h2>
-								<?php foreach ($attributes as $attribute_name => $attribute):
-									$terms = get_terms([
-										'taxonomy' => $attribute_name,
-										'hide_empty' => false,
-									]);
-									if (is_array($terms)) {
+											// Store the variation by its attributes
+											$variable_products[$variation_id] = [
+												'attributes' => $variation_attributes,
+												'stock' => $variation_stock,
+											];
+										}
 										?>
-										<div class="row">
-											<div class="col-25">
-												<label
-													for="<?php echo esc_attr($attribute_name); ?>"><?php echo esc_html(str_replace('pa_', '', $attribute['name'])); ?></label>
-											</div>
-											<div class="col-75">
-												<select class="attribute-select" data-attribute="<?php echo esc_attr($attribute_name); ?>">
-													<option value="">Select <?php echo esc_html(str_replace('pa_', '', $attribute['name'])); ?>
-													</option>
-													<?php
-													// Get the terms for the attribute
+										<div id="attribute-selects">
+											<h3>Additional Attributes</h3>
+											<?php foreach ($attributes as $attribute_name => $attribute):
+												$terms = get_terms([
+													'taxonomy' => $attribute_name,
+													'hide_empty' => false,
+												]);
+												if (is_array($terms)) {
+													?>
+													<div class="row">
+														<div class="col-25">
+															<label
+																for="<?php echo esc_attr($attribute_name); ?>"><?php echo esc_html(str_replace('pa_', '', $attribute['name'])); ?></label>
+														</div>
+														<div class="col-75">
+															<select class="attribute-select" data-attribute="<?php echo esc_attr($attribute_name); ?>">
+																<option value="">Select <?php echo esc_html(str_replace('pa_', '', $attribute['name'])); ?>
+																</option>
+																<?php
+																// Get the terms for the attribute
 							
 
-													// Create options for each term
+																// Create options for each term
 							
-													foreach ($terms as $term): ?>
-														<option value="<?php echo esc_attr($term->term_id); ?>"><?php echo esc_html($term->name); ?>
-														</option>
-													<?php endforeach; ?>
+																foreach ($terms as $term): ?>
+																	<option value="<?php echo esc_attr($term->term_id); ?>"><?php echo esc_html($term->name); ?>
+																	</option>
+																<?php endforeach; ?>
 
-												</select>
-											</div>
+															</select>
+														</div>
+													</div>
+												<?php }
+												?>
+											<?php endforeach; ?>
 										</div>
-									<?php }
-									?>
-								<?php endforeach; ?>
-							</div>
+									<?php } ?>
+								<?php } elseif ($field['field_key'] == 'preferred_method_of_notify') { ?>
+									<?php $select_options = [
+										'email' => 'Email',
+										'sms' => 'SMS',
+										'push' => 'Push Notification',
+									]; ?>
+									<div class="row">
+										<div class="col-25">
+											<label for="<?php echo esc_attr($field_key); ?>">
+												<?php echo esc_html($label); ?>
+												<?php if ($required): ?>
+													<span style="color: red;">*</span>
+												<?php endif; ?>
+											</label>
+										</div>
+										<div class="col-75">
+											<select name="<?php echo esc_attr($field_key); ?>" id="<?php echo esc_attr($field_key); ?>" <?php echo $required ? 'required' : ''; ?>>
+												<option value=""><?php echo 'Select ' . esc_html($label); ?></option>
+												<?php foreach ($select_options as $opt_value => $opt_label): ?>
+													<option value="<?php echo esc_attr($opt_value); ?>"><?php echo esc_html($opt_label); ?></option>
+												<?php endforeach; ?>
+											</select>
+										</div>
+									</div>
+
+								<?php } else { ?>
+									<div class="row">
+										<div class="col-25">
+											<label for="<?php echo esc_attr($field_key); ?>">
+												<?php echo esc_html($label); ?>
+												<?php if ($required): ?>
+													<span style="color: red;">*</span>
+												<?php endif; ?>
+											</label>
+										</div>
+										<div class="col-75">
+											<input type="<?php echo esc_attr($type); ?>" name="<?php echo esc_attr($field_key); ?>"
+												id="<?php echo esc_attr($field_key); ?>" placeholder="<?php echo esc_attr($placeholder); ?>"
+												<?php echo $required ? 'required' : ''; ?>>
+										</div>
+									</div>
+								<?php } ?>
+							<?php } ?>
 						<?php } ?>
 						<div class="row">
 							<div class="col-75">
@@ -267,10 +311,10 @@ class Price_Drop_Notify_Expert_Public {
 			return sanitize_text_field($item);
 		}, $_POST['formData']);
 
-		if (!isset($_POST['pcne_nonce']) || !wp_verify_nonce($_POST['pcne_nonce'], 'pcne_nonce')) {
-			wp_send_json(array("status" => "error", "message" => "Invalid nonce!"));
-			wp_die();
-		}
+		// if (!isset($_POST['pcne_nonce']) || !wp_verify_nonce($_POST['pcne_nonce'], 'pcne_nonce')) {
+		// 	wp_send_json(array("status" => "error", "message" => "Invalid nonce!"));
+		// 	wp_die();
+		// }
 
 		if (!isset($formData['name']) || !isset($formData['email']) || !isset($formData['phone'])) {
 			wp_send_json(array("status" => "error", "message" => "All fields are required!"));
@@ -287,6 +331,8 @@ class Price_Drop_Notify_Expert_Public {
 		$email = isset($formData['email']) ? sanitize_email($formData['email']) : '';
 		$phone = isset($formData['phone']) ? sanitize_text_field($formData['phone']) : '';
 		$selected_attributes = isset($formData['selected_attributes']) ? json_encode($formData['selected_attributes']) : '';
+		$preferred_method_of_notify = isset($formData['preferred_method_of_notify']) ? sanitize_text_field($formData['preferred_method_of_notify']) : '';
+		$token = isset($_POST['token']) ? sanitize_text_field($_POST['token']) : '';
 		// Check if a record with the same email or phone already exists
 		$existing_entry = $wpdb->get_row(
 			$wpdb->prepare(
@@ -307,10 +353,12 @@ class Price_Drop_Notify_Expert_Public {
 					'name' => $name,
 					'email' => $email,
 					'phone' => $phone,
+					'preferred_method_of_notify' => $preferred_method_of_notify,
+					'token' => $token,
 					'submitted_at' => current_time('mysql'),
 				],
 				['id' => $existing_entry->id],
-				['%d', '%d', '%s', '%s', '%s', '%s', '%s'],
+				['%d', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s'],
 				['%d']
 			);
 		} else {
@@ -318,16 +366,17 @@ class Price_Drop_Notify_Expert_Public {
 			$data_update = $wpdb->insert(
 				$table_name,
 				[
-					'id' => '',
 					'user_id' => $user_id,
 					'product_id' => $product_id,
 					'variable_data' => $selected_attributes,
 					'name' => $name,
 					'email' => $email,
 					'phone' => $phone,
+					'preferred_method_of_notify' => $preferred_method_of_notify,
+					'token' => $token,
 					'submitted_at' => current_time('mysql'),
 				],
-				['%d', '%d', '%s', '%s', '%s', '%s', '%s', '%s']
+				['%d', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s']
 			);
 		}
 
@@ -404,10 +453,22 @@ class Price_Drop_Notify_Expert_Public {
 
 		if (is_product()) {
 			global $product;
-			do_action('price_drop_notify_expert_price_dropped', $product->get_ID());
+			do_action('price_drop_notify_email_on_price_dropped', $product->get_ID());
 		} else {
-			error_log('price_drop_notify_expert_price_dropped was not called: No valid product.');
+			error_log('price_drop_notify_push_notif_on_price_dropped was not called: No valid product.');
 		}
 	}
+	public function serve_firebase_sw() {
+		header("Service-Worker-Allowed: /");
+		readfile(plugin_dir_path(__FILE__) . '/firebase-messaging-sw.js');
+		exit;
+	}
 
+	// Create a URL endpoint for the service worker
+
+	public function init_serve_firebase_sw() {
+		if (isset($_GET['firebase-sw'])) {
+			$this->serve_firebase_sw();
+		}
+	}
 }

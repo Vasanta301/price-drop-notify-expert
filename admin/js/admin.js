@@ -7,8 +7,8 @@
             handle: ".field-header",  // drag handle is the header
             update: function (event, ui) {
                 // console.log("New field order:");
-                $("#sortable-fields .field-item").each(function (index) {
-                    // console.log(index + 1 + ": " + $(this).data("key"));
+                $('#sortable-fields .field-item').each(function (index) {
+                    $(this).find('.field-order').val(index);
                 });
             }
         });
